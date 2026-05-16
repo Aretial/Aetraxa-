@@ -487,18 +487,25 @@ export default function App() {
 
   const getAIInsights = useCallback(async (data: WeatherData) => {
     setAiLoading(true);
+    setAiInsights(null); // Reset
     try {
       const response = await fetch('/api/ai-insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weatherData: data, language })
       });
+      
       if (response.ok) {
         const insights = await response.json();
         setAiInsights(insights);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error("AI Insight fetch error:", errorData);
+        setAiInsights({ summary: `AI Error: ${errorData.error || response.statusText}`, suggestions: [] });
       }
     } catch (err) {
       console.error("AI Insight fetch failed", err);
+      setAiInsights({ summary: "AI Service unavailable. Try again later.", suggestions: [] });
     } finally {
       setAiLoading(false);
     }

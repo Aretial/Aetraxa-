@@ -19,22 +19,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (!apiKey) {
-    console.error("GROQ_API_KEY is missing");
+    console.error("GROQ_API_KEY is missing from environment");
     return res.status(500).json({ 
-      error: "GROQ_API_KEY not configured. Please add it to your environment variables in Vercel." 
+      error: "GROQ_API_KEY not configured. Ensure it's added to Vercel Environment Variables (without VITE_ prefix for server-side)." 
     });
   }
 
+  console.log("Initializing Groq with API Key (prefix):", apiKey.substring(0, 5) + "...");
   const groq = new Groq({ apiKey });
 
   try {
     const { weatherData, userProfile, language } = req.body || {};
 
     if (!weatherData) {
+      console.error("No weather data provided in request body");
       return res.status(400).json({ error: "Missing weather data" });
     }
+
+    console.log("Analyzing weather for:", weatherData.city);
 
     let profileContext = '';
     if (userProfile) {
