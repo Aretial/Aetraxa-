@@ -20,10 +20,11 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+  
   if (!apiKey) {
-    console.error("GROQ_API_KEY is missing from environment");
+    console.error("GROQ_API_KEY is missing from environment. available env keys:", Object.keys(process.env).filter(k => k.includes('GROQ') || k.includes('API_KEY')));
     return res.status(500).json({ 
-      error: "GROQ_API_KEY not configured. Ensure it's added to Vercel Environment Variables (without VITE_ prefix for server-side)." 
+      error: "GROQ_API_KEY not configured. Please ensure you have added it to Vercel Environment Variables and TRIGGERED A NEW DEPLOYMENT." 
     });
   }
 

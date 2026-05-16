@@ -8,11 +8,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Check for API Key
-const groqApiKey = process.env.GROQ_API_KEY;
+const groqApiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
 
 let groq: Groq | null = null;
 if (groqApiKey) {
+  console.log("Initializing server-side Groq with key starting with:", groqApiKey.substring(0, 5) + "...");
   groq = new Groq({ apiKey: groqApiKey });
+} else {
+  console.warn("GROQ_API_KEY is not defined in the environment.");
 }
 
 async function startServer() {
