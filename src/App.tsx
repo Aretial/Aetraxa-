@@ -542,8 +542,10 @@ export default function App() {
   const handleLocateMe = useCallback(async () => {
     setIsLocating(true);
     setError(null);
+    let locationResolved = false;
 
     const fallbackToIp = async () => {
+      if (locationResolved) return;
       try {
         const res = await fetch('https://freeipapi.com/api/json');
         if (!res.ok) throw new Error("IP Lookup failed");
@@ -551,9 +553,12 @@ export default function App() {
         if (!data.latitude || !data.longitude) throw new Error("Location data incomplete");
         
         await processLocation(data.latitude, data.longitude);
+        locationResolved = true;
       } catch (fbErr) {
-        console.error("Fallback location failed:", fbErr);
-        setError("Unable to automatically detect location. Please search for your city directly.");
+        if (!locationResolved) {
+          console.error("Fallback location failed:", fbErr);
+          setError("Unable to automatically detect location. Please search for your city directly.");
+        }
         setIsLocating(false);
       }
     };
@@ -565,11 +570,14 @@ export default function App() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        locationResolved = true;
         processLocation(position.coords.latitude, position.coords.longitude);
       },
       (err) => {
-        console.warn("Geolocation failed, trying fallback:", err);
-        fallbackToIp();
+        if (!locationResolved) {
+          console.warn("Geolocation failed, trying fallback:", err);
+          fallbackToIp();
+        }
       },
       { 
         timeout: 8000, 
