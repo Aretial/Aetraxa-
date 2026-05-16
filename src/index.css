@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gulzar&display=swap');
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Jameeli Noori Nastaleeq Regular';
+  src: url('https://unpkg.com/urdutype-fonts@1.0.0/dist/jameel-noori-nastaleeq-regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-heat-safe: #22c55e;
+  --color-heat-caution: #eab308;
+  --color-heat-extreme: #db6321;
+  --color-heat-danger: #ef4444;
+  --color-heat-lethal: #a855f7;
+  --color-orange-400: #db6321;
+  --color-orange-500: #db6321;
+  --color-orange-600: #db6321;
+  --color-orange-700: #db6321;
+  --color-orange-900: #db6321;
+  --color-stone-900: #0c0a0a;
+  --color-stone-950: #0a0a0a;
+}
+
+@layer base {
+  :root {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Fredoka", sans-serif;
+  }
+  
+  body {
+    @apply bg-[#0c0a0a] text-[#fff2d4] antialiased overflow-x-hidden;
+    font-family: var(--font-sans);
+  }
+  
+  /* Nastaleeq font adjustments */
+  body[dir="rtl"] {
+    --font-sans: 'Jameeli Noori Nastaleeq Regular', 'Jameel Noori Nastaleeq', 'Gulzar', 'Noto Nastaliq Urdu', "Inter", sans-serif;
+    --font-display: 'Jameeli Noori Nastaleeq Regular', 'Jameel Noori Nastaleeq', 'Gulzar', 'Noto Nastaliq Urdu', "Outfit", sans-serif;
+    font-family: var(--font-sans);
+  }
+  
+  body[dir="rtl"] .font-display {
+    font-family: var(--font-display);
+  }
+  
+  body[dir="rtl"] * {
+    letter-spacing: normal !important;
+  }
+  body[dir="rtl"] .text-xs { @apply text-sm; }
+  body[dir="rtl"] .text-sm { @apply text-base; }
+  body[dir="rtl"] .text-base { @apply text-lg; }
+  body[dir="rtl"] .text-lg { @apply text-xl; }
+  body[dir="rtl"] .text-5xl { @apply text-6xl text-center; }
+  body[dir="rtl"] .md\:text-8xl { @apply md:text-[7rem]; }
+  body[dir="rtl"] p { @apply leading-loose tracking-normal; }
+  body[dir="rtl"] h1, body[dir="rtl"] h2, body[dir="rtl"] h3 { @apply tracking-normal leading-tight; }
+}
+
+@layer utilities {
+  .text-glow-orange {
+    text-shadow: 0 0 20px rgba(255, 100, 0, 0.4);
+  }
+  
+  .bg-molten {
+    background: radial-gradient(circle at 50% -20%, #db6321 0%, #db6321 40%, #0c0a0a 100%);
+  }
+
+  .molten-dune {
+    background: radial-gradient(circle at 100% 100%, #db6321 0%, transparent 60%);
+    filter: blur(80px);
+  }
+
+  .theme-card {
+    @apply bg-[#0c0a0a]/50 border border-[#0c0a0a] rounded-2xl backdrop-blur-sm transition-all hover:border-stone-700;
+  }
+
+  .title-gradient {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-[#db6321] via-[#db6321] to-[#db6321];
+  }
+
+  /* Animated Heat Shimmer - Simplified to opacity only to prevent scroll jitter */
+  @keyframes shimmer {
+    0% { opacity: 0.1; }
+    50% { opacity: 0.25; }
+    100% { opacity: 0.1; }
+  }
+
+  .heat-shimmer {
+    animation: shimmer 8s ease-in-out infinite;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0c0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #db6321;
+}

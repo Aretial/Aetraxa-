@@ -1,0 +1,8 @@
+{
+  "name": "Heatwave Tool",
+  "description": "Real-time heat danger scores and safety alerts for cities across the Globe",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}
