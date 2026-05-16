@@ -37,7 +37,7 @@ import {
   Globe as GlobeIcon,
   Activity as ActivityIcon
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 
 import { ForecastChart } from './components/ForecastChart';
 import { HeatwaveSafetyTips } from './components/HeatwaveSafetyTips';
@@ -1708,17 +1708,25 @@ const MainAppPage = React.memo(({
         >
           {/* Hero Section: Gauge and Primary Metrics */}
           <section className="lg:col-span-12 xl:col-span-8 bg-[#0c0a0a]/75 backdrop-blur-md rounded-[3rem] border border-[#fff2d4]/5 p-5 sm:p-8 md:p-12 relative overflow-hidden flex flex-col items-center">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600/5 blur-[120px] rounded-full -mr-48 -mt-48" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600/5 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none" />
             
-            <div className="w-full flex justify-between items-start mb-12">
+            <div className="w-full flex justify-between items-start mb-12 relative z-10">
                <div className="flex items-center gap-4 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-full">
                  <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">{t('liveAtmosphere' as any)}</span>
                </div>
                
                <div className="flex items-center gap-3">
-                 <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleShare} className="p-3 rounded-full bg-white/5 border border-white/10 text-[#fff2d4] hover:bg-white/10 transition-all">
-                   <ShareIcon className="w-5 h-5" />
+                 <motion.button 
+                   whileHover={{ scale: 1.1 }} 
+                   whileTap={{ scale: 0.9 }} 
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     handleShare();
+                   }} 
+                   className="p-3 rounded-full bg-white/5 border border-white/10 text-[#fff2d4] hover:bg-white/10 transition-all cursor-pointer relative z-20"
+                 >
+                   <ShareIcon className="w-5 h-5 pointer-events-none" />
                  </motion.button>
                </div>
             </div>
@@ -1933,16 +1941,19 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      const blob = await htmlToImage.toBlob(cardRef.current, {
         backgroundColor: '#050505',
         width: 600,
         height: 800,
+        pixelRatio: 2
       });
-      const dataUrl = canvas.toDataURL('image/png');
+      if (!blob) throw new Error("Failed to generate image blob");
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = `Aetraxa-Report-${weather.city}.webp`;
-      link.href = dataUrl;
+      link.download = `Aetraxa-Report-${weather.city}.png`;
+      link.href = url;
       link.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to generate image', err);
     } finally {
@@ -1954,15 +1965,15 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      const blob = await htmlToImage.toBlob(cardRef.current, {
         backgroundColor: '#050505',
         width: 600,
         height: 800,
+        pixelRatio: 2
       });
-      const dataUrl = canvas.toDataURL('image/png');
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-      const file = new File([blob], `Aetraxa-Report-${weather.city}.webp`, { type: 'image/png' });
+      
+      if (!blob) throw new Error("Failed to generate image blob");
+      const file = new File([blob], `Aetraxa-Report-${weather.city}.png`, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -1970,12 +1981,14 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
           title: shareData.title,
           text: shareData.text,
         });
-      } else {
+      } else if (navigator.share) {
         await navigator.share({
           title: shareData.title,
           text: `${shareData.text}\n\nLink: ${shareData.url}`,
           url: shareData.url
         });
+      } else {
+        handleCopy();
       }
     } catch (err) {
       console.error('Share failed', err);
@@ -2028,6 +2041,15 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
                <p className="text-[10px] text-stone-500 font-black uppercase tracking-[0.3em]">{weather.city} • Telemetry v4.2</p>
              </div>
           </div>
+          {copied && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              className="bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full ml-auto mr-4"
+            >
+              <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">Link Copied</span>
+            </motion.div>
+          )}
           <button 
             onClick={onClose}
             aria-label="Close share modal"
@@ -2087,7 +2109,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
           />
           <ShareOption 
             icon={<DownloadIcon className="w-5 h-5" />} 
-            label="Save JPG" 
+            label="Save PNG" 
             onClick={handleDownload}
             color="bg-[#fff2d4]/10 text-[#fff2d4]"
             borderColor="rgba(255,242,212,0.2)"
