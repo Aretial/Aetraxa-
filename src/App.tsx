@@ -511,6 +511,34 @@ export default function App() {
     }
   }, [language]);
 
+  const processLocation = useCallback(async (latitude: number, longitude: number, cityName?: string) => {
+    try {
+      setError(null);
+      const weatherData = await getWeatherData({ lat: latitude, lon: longitude, name: cityName });
+      setWeather(weatherData);
+      setError(null); // Double confirm clear
+      setSelectedCity(weatherData.city);
+      setSelectedCityData({ lat: latitude, lon: longitude });
+      getAIInsights(weatherData);
+      
+      // Start transition if not already on Main page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (currentPage !== Page.Main) {
+        setTimeout(() => {
+          setTransitionDirection('forward');
+          setTimeout(() => setCurrentPage(Page.Main), 100);
+        }, 600);
+      } else {
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Location process error:", err);
+      setError(err.message || "Failed to retrieve weather for this location.");
+    } finally {
+      setIsLocating(false);
+    }
+  }, [getAIInsights, currentPage]);
+
   const handleLocateMe = useCallback(async () => {
     setIsLocating(true);
     setError(null);
@@ -518,27 +546,14 @@ export default function App() {
     const fallbackToIp = async () => {
       try {
         const res = await fetch('https://freeipapi.com/api/json');
-        if (!res.ok) throw new Error("Fallback failed");
+        if (!res.ok) throw new Error("IP Lookup failed");
         const data = await res.json();
-        const weatherData = await getWeatherData({ lat: data.latitude, lon: data.longitude });
-        setWeather(weatherData);
-        setSelectedCity(weatherData.city);
-        setSelectedCityData({ lat: data.latitude, lon: data.longitude });
-        getAIInsights(weatherData);
+        if (!data.latitude || !data.longitude) throw new Error("Location data incomplete");
         
-        // Start transition if not already on Main page
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (currentPage !== Page.Main) {
-          setTimeout(() => {
-            setTransitionDirection('forward');
-            setTimeout(() => setCurrentPage(Page.Main), 100);
-          }, 600);
-        } else {
-          setLoading(false);
-        }
+        await processLocation(data.latitude, data.longitude);
       } catch (fbErr) {
+        console.error("Fallback location failed:", fbErr);
         setError("Unable to automatically detect location. Please search for your city directly.");
-      } finally {
         setIsLocating(false);
       }
     };
@@ -549,38 +564,20 @@ export default function App() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const weatherData = await getWeatherData({ lat: latitude, lon: longitude });
-          setWeather(weatherData);
-          setSelectedCity(weatherData.city);
-          setSelectedCityData({ lat: latitude, lon: longitude });
-          getAIInsights(weatherData);
-          
-          // Start transition if not already on Main page
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          if (currentPage !== Page.Main) {
-            setTimeout(() => {
-              setTransitionDirection('forward');
-              setTimeout(() => setCurrentPage(Page.Main), 100);
-            }, 600);
-          } else {
-            setLoading(false);
-          }
-          setIsLocating(false);
-        } catch (err: any) {
-          setError(err.message);
-          setIsLocating(false);
-        }
+      (position) => {
+        processLocation(position.coords.latitude, position.coords.longitude);
       },
       (err) => {
-        // Fallback for iframe restrictions or permissions denial
+        console.warn("Geolocation failed, trying fallback:", err);
         fallbackToIp();
       },
-      { timeout: 10000 }
+      { 
+        timeout: 8000, 
+        enableHighAccuracy: false,
+        maximumAge: 60000 
+      }
     );
-  }, [getAIInsights, currentPage]);
+  }, [processLocation]);
 
   const handleCitySearch = useCallback(async (query: string) => {
     if (query.length < 2) {
