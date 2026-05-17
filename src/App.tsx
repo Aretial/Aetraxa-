@@ -504,9 +504,21 @@ export default function App() {
           suggestions: ["Check your API key in the Settings menu.", "Deploy with a valid key for AI features."] 
         });
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error("AI Insight fetch error:", errorData);
-        setAiInsights({ summary: `AI Error: ${errorData.error || response.statusText}`, suggestions: [] });
+        const text = await response.text();
+        let errorMessage = response.statusText || 'Unknown error';
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If not JSON, use status text or a snippet of the body
+          if (text.includes('<!DOCTYPE html>')) {
+            errorMessage = `Server Error (${response.status}): The API endpoint was not found or returned an HTML page.`;
+          } else {
+            errorMessage = text.substring(0, 100) || errorMessage;
+          }
+        }
+        console.error("AI Insight fetch error:", { status: response.status, body: text });
+        setAiInsights({ summary: `AI Error: ${errorMessage}`, suggestions: [] });
       }
     } catch (err) {
       console.error("AI Insight fetch failed", err);
