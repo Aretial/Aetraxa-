@@ -753,9 +753,8 @@ export default function App() {
   }, [weather]);
 
   return (
-    <div className="min-h-screen bg-[#120904] p-4 sm:p-8 flex items-center justify-center">
-      <div className="relative w-full max-w-screen-2xl min-h-[90vh] flex flex-col font-sans bg-[#0c0a0a] overflow-x-hidden selection:bg-orange-500/30 rounded-[3rem] shadow-2xl border border-[#fff2d4]/5">
-        <TempUnitContext.Provider value={{ tempUnit, setTempUnit }}>
+    <div className="relative min-h-screen flex flex-col font-sans bg-[#0c0a0a] overflow-x-hidden selection:bg-orange-500/30">
+      <TempUnitContext.Provider value={{ tempUnit, setTempUnit }}>
       {/* Background Glow Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[#050505]" />
@@ -886,7 +885,6 @@ export default function App() {
         <div className="h-full w-full bg-gradient-to-t from-transparent via-orange-500 to-transparent" />
       </div>
       </TempUnitContext.Provider>
-      </div>
     </div>
   );
 }
