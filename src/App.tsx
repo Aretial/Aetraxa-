@@ -5,18 +5,29 @@ export const TempUnitContext = createContext<{ tempUnit: 'celsius' | 'fahrenheit
 export const useTempUnit = () => useContext(TempUnitContext);
 
 import { 
+  Search as SearchIcon, 
   Droplets as DropletsIcon, 
+  Thermometer as ThermometerIcon, 
+  AlertTriangle as AlertTriangleIcon, 
   Sun as SunIcon, 
   Wind as WindIcon, 
+  Clock as ClockIcon, 
   Share2 as ShareIcon,
+  Settings as SettingsIcon,
   Navigation as NavigationIcon,
   ChevronRight as ChevronRightIcon,
   Menu as MenuIcon,
+  Info as InfoIcon,
+  User as UserIcon,
+  LogOut as LogOutIcon,
   Flame as FlameIcon,
+  Sparkles as SparklesIcon,
   Brain as BrainIcon,
   Cpu as CpuIcon,
+  CloudRain as RainIcon,
   ShieldAlert as ShieldAlertIcon,
   Zap as ZapIcon,
+  Lightbulb as LightbulbIcon,
   CheckCircle2 as CheckIcon,
   Twitter as TwitterIcon,
   Facebook as FacebookIcon,
@@ -29,6 +40,7 @@ import {
 import * as htmlToImage from 'html-to-image';
 
 import { ForecastChart } from './components/ForecastChart';
+import { HeatwaveSafetyTips } from './components/HeatwaveSafetyTips';
 import { getWeatherData, calculateHeatIndex as calcHI, searchCities } from './services/weatherService';
 import { COUNTRIES, CITIES_BY_COUNTRY } from './constants/locations';
 import { useLanguage } from './LanguageContext';
@@ -486,6 +498,11 @@ export default function App() {
       if (response.ok) {
         const insights = await response.json();
         setAiInsights(insights);
+      } else if (response.status === 401) {
+        setAiInsights({ 
+          summary: "Invalid Groq API Key detected. Please ensure you have set a valid GROQ_API_KEY in the application settings.", 
+          suggestions: ["Check your API key in the Settings menu.", "Deploy with a valid key for AI features."] 
+        });
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error("AI Insight fetch error:", errorData);
@@ -724,8 +741,9 @@ export default function App() {
   }, [weather]);
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans bg-[#0c0a0a] overflow-x-hidden selection:bg-orange-500/30">
-      <TempUnitContext.Provider value={{ tempUnit, setTempUnit }}>
+    <div className="min-h-screen bg-[#120904] p-4 sm:p-8 flex items-center justify-center">
+      <div className="relative w-full max-w-screen-2xl min-h-[90vh] flex flex-col font-sans bg-[#0c0a0a] overflow-x-hidden selection:bg-orange-500/30 rounded-[3rem] shadow-2xl border border-[#fff2d4]/5">
+        <TempUnitContext.Provider value={{ tempUnit, setTempUnit }}>
       {/* Background Glow Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[#050505]" />
@@ -856,6 +874,7 @@ export default function App() {
         <div className="h-full w-full bg-gradient-to-t from-transparent via-orange-500 to-transparent" />
       </div>
       </TempUnitContext.Provider>
+      </div>
     </div>
   );
 }

@@ -10,14 +10,6 @@ dotenv.config();
 // Check for API Key
 const groqApiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
 
-let groq: Groq | null = null;
-if (groqApiKey) {
-  console.log("Initializing server-side Groq with key starting with:", groqApiKey.substring(0, 5) + "...");
-  groq = new Groq({ apiKey: groqApiKey });
-} else {
-  console.warn("GROQ_API_KEY is not defined in the environment.");
-}
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -25,18 +17,20 @@ async function startServer() {
   app.use(express.json());
 
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", groqConfigured: !!groq });
+    res.json({ status: "ok", groqConfigured: !!groqApiKey });
   });
 
   // AI Insights API
   app.post("/api/ai-insights", async (req, res) => {
     console.log("AI Insights request received for city:", req.body?.weatherData?.city);
-    if (!groq) {
+    if (!groqApiKey) {
       console.error("GROQ_API_KEY is missing");
       return res.status(500).json({ 
         error: "GROQ_API_KEY not configured. Please add it to your environment variables." 
       });
     }
+
+    const groq = new Groq({ apiKey: groqApiKey });
 
     try {
       const { weatherData, userProfile, language } = req.body;
@@ -114,6 +108,11 @@ async function startServer() {
       }
     } catch (error: any) {
       console.error("Groq API Error:", error);
+      if (error.status === 401) {
+        return res.status(401).json({ 
+          error: "Invalid Groq API Key. Please check your GROQ_API_KEY environment variable." 
+        });
+      }
       res.status(500).json({ error: error.message });
     }
   });
