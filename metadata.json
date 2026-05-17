@@ -1,6 +1,6 @@
 {
-  "name": "Heatwave Tool",
-  "description": "Real-time heat danger scores and safety alerts for cities across the Globe",
+  "name": "AETRAXA",
+  "description": "Advanced meteorological surveillance and thermal risk assessment platform",
   "requestFramePermissions": [
     "geolocation"
   ],

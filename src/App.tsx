@@ -5,29 +5,18 @@ export const TempUnitContext = createContext<{ tempUnit: 'celsius' | 'fahrenheit
 export const useTempUnit = () => useContext(TempUnitContext);
 
 import { 
-  Search as SearchIcon, 
   Droplets as DropletsIcon, 
-  Thermometer as ThermometerIcon, 
-  AlertTriangle as AlertTriangleIcon, 
   Sun as SunIcon, 
   Wind as WindIcon, 
-  Clock as ClockIcon, 
   Share2 as ShareIcon,
-  Settings as SettingsIcon,
   Navigation as NavigationIcon,
   ChevronRight as ChevronRightIcon,
   Menu as MenuIcon,
-  Info as InfoIcon,
-  User as UserIcon,
-  LogOut as LogOutIcon,
   Flame as FlameIcon,
-  Sparkles as SparklesIcon,
   Brain as BrainIcon,
   Cpu as CpuIcon,
-  CloudRain as RainIcon,
   ShieldAlert as ShieldAlertIcon,
   Zap as ZapIcon,
-  Lightbulb as LightbulbIcon,
   CheckCircle2 as CheckIcon,
   Twitter as TwitterIcon,
   Facebook as FacebookIcon,
@@ -40,7 +29,6 @@ import {
 import * as htmlToImage from 'html-to-image';
 
 import { ForecastChart } from './components/ForecastChart';
-import { HeatwaveSafetyTips } from './components/HeatwaveSafetyTips';
 import { getWeatherData, calculateHeatIndex as calcHI, searchCities } from './services/weatherService';
 import { COUNTRIES, CITIES_BY_COUNTRY } from './constants/locations';
 import { useLanguage } from './LanguageContext';
