@@ -2140,8 +2140,8 @@ const MainAppPage = React.memo(({
               </div>
 
               {/* Summary Section */}
-              <div className="relative">
-                <div className="absolute -left-8 top-0 bottom-0 w-[2px] bg-gradient-to-b from-orange-600/50 via-orange-600/10 to-transparent" />
+              <div className="relative pl-6">
+                <div className="absolute left-0 top-0 bottom-0 w-[1.5px] bg-gradient-to-b from-primary-accent/50 via-primary-accent/10 to-transparent" />
                 {aiLoading ? (
                   <div className="space-y-4">
                     <div className="h-4 bg-white/5 rounded w-full animate-pulse" />
@@ -2151,7 +2151,7 @@ const MainAppPage = React.memo(({
                 ) : (
                   <div className="text-[16px] text-primary-light/80 font-medium leading-relaxed italic">
                     <div className="text-[9px] font-black text-primary-accent uppercase tracking-widest mb-3 flex items-center gap-2">
-                       <span className="w-4 h-[1px] bg-primary-accent/30" />
+                       <span className="w-5 h-[1.5px] bg-primary-accent/60" />
                        Situation Briefing
                     </div>
                     <Markdown>{aiInsights?.summary || "Analyzing current operational environment..."}</Markdown>
