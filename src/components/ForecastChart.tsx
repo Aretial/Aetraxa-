@@ -26,15 +26,15 @@ interface ForecastChartProps {
 const CustomTooltip = ({ active, payload, label, unit }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#0c0a0a] border border-[#fff2d4]/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl">
-        <p className="text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2">{label}</p>
+      <div className="bg-black border border-white/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl">
+        <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">{label}</p>
         <div className="space-y-1">
-          <p className="text-sm font-black text-[#fff2d4] flex justify-between gap-4">
-            <span className="text-stone-400 font-bold uppercase tracking-wider text-[10px]">Temperature</span>
+          <p className="text-sm font-black text-white flex justify-between gap-4">
+            <span className="text-white/40 font-bold uppercase tracking-wider text-[10px]">Temperature</span>
             <span>{payload[0].value.toFixed(1)}{unit === 'fahrenheit' ? '°F' : '°C'}</span>
           </p>
-          <p className="text-sm font-black text-orange-500 flex justify-between gap-4">
-            <span className="text-orange-500/60 font-bold uppercase tracking-wider text-[10px]">Heat Index</span>
+          <p className="text-sm font-black text-primary-accent flex justify-between gap-4">
+            <span className="text-primary-accent/60 font-bold uppercase tracking-wider text-[10px]">Heat Index</span>
             <span>{payload[1].value.toFixed(1)}{unit === 'fahrenheit' ? '°F' : '°C'}</span>
           </p>
         </div>
@@ -73,14 +73,14 @@ export const ForecastChart = React.memo(({ data, unit = 'celsius' }: ForecastCha
             dataKey="time" 
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#78716c', fontSize: 10, fontWeight: 700 }}
+            tick={{ fill: '#fff2d444', fontSize: 10, fontWeight: 700 }}
             interval={3}
             minTickGap={20}
           />
           <YAxis 
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#78716c', fontSize: 10, fontWeight: 700 }}
+            tick={{ fill: '#fff2d444', fontSize: 10, fontWeight: 700 }}
             domain={['auto', 'auto']}
           />
           <Tooltip content={<CustomTooltip unit={unit} />} isAnimationActive={false} />

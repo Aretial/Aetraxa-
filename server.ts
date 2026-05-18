@@ -7,8 +7,20 @@ import dotenv from "dotenv";
 // Load environment variables
 dotenv.config();
 
-// Check for API Key
-const groqApiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+// Groq API Key Pool
+const keys = {
+  core: process.env.GROQ_API_KEY_CORE,
+  aid: process.env.GROQ_API_KEY_AID,
+  site: process.env.GROQ_API_KEY_SITE,
+};
+
+const DEFAULT_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+
+function getGroqClient(type: 'core' | 'aid' | 'site' = 'core') {
+  const key = keys[type] || keys.core;
+  if (!key) throw new Error(`GROQ_API_KEY_${type.toUpperCase()} is missing`);
+  return new Groq({ apiKey: key });
+}
 
 async function startServer() {
   const app = express();
@@ -17,22 +29,20 @@ async function startServer() {
   app.use(express.json());
 
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", groqConfigured: !!groqApiKey });
+    res.json({ 
+      status: "ok", 
+      coreConfigured: !!keys.core,
+      aidConfigured: !!keys.aid,
+      siteConfigured: !!keys.site 
+    });
   });
 
-  // AI Insights API
+  // AI Insights API (Static Analysis)
   app.post("/api/ai-insights", async (req, res) => {
     console.log("AI Insights request received for city:", req.body?.weatherData?.city);
-    if (!groqApiKey) {
-      console.error("GROQ_API_KEY is missing");
-      return res.status(500).json({ 
-        error: "GROQ_API_KEY not configured. Please add it to your environment variables." 
-      });
-    }
-
-    const groq = new Groq({ apiKey: groqApiKey });
-
+    
     try {
+      const groq = getGroqClient('core');
       const { weatherData, userProfile, language } = req.body;
       
       let profileContext = '';
@@ -47,10 +57,9 @@ async function startServer() {
       - Preferred language: ${userProfile.preferred_language || (language === 'ur' ? 'Urdu' : 'English')}
       
       IMPORTANT PERSONALIZATION INSTRUCTIONS:
-      1. CRITICAL: Tailor the "summary" and "suggestions" directly to their occupation and health conditions. (e.g. if they are a Construction Worker, suggest specific work/rest cycles. If they have a Heart condition, emphasize cardiovascular strain early).
+      1. CRITICAL: Tailor the "summary" and "suggestions" directly to their occupation and health conditions.
       2. Keep responses in the user's Preferred Language if possible, especially the "summary" and "suggestions" arrays! (e.g. if Urdu, output Urdu strings for summary and suggestions, but keep JSON keys in English).
-      3. Adapt the severity based on their profile: Someone active or with health conditions may face higher danger at lower thresholds.
-      4. If their Alert style is "Emergency only" and conditions are not dangerous, provide very brief, minimal suggestions. If conditions are extremely dangerous, be very firm.
+      3. Adapt the severity based on their profile.
       `;
       }
 
@@ -65,33 +74,45 @@ async function startServer() {
       ${profileContext}
       ${uiLanguageInstruction}
 
-      Instructions:
-      1. Provide a concise qualitative assessment (max 10 words) for: temp, heatIndex, humidity, wind, uv.
-      2. Provide a short safety summary based on the actual environment and the User Profile (e.g., if it's cold/normal, do not focus on heat exhaustion).
-      3. A list of 1-4 specific, highly relevant precautions or tips. If conditions are optimal/nominal, fewer or no precautions are necessary—do not invent hazards. Make SURE to address their specific occupation or health condition in these tips if it increases their risk.
-      4. "peakSunHours": A specific ESTIMATED TIME INTERVAL (e.g., "11:00 AM - 4:00 PM") when sun exposure is peak/dangerous.
-      5. "coolerHours": A specific ESTIMATED TIME INTERVAL (e.g., "6:00 AM - 9:00 AM") when conditions are most tolerable.
+      MISSION PARAMETERS:
+      1. CRITICAL: Avoid generic "drink water" advice. Provide DATA-DRIVEN, TACTICAL cooling protocols.
+      2. If temperature is >40°C, calculate a specific hydration target (e.g. "Drink 0.5L every 45 mins").
+      3. If UV is >8, specify exactly when to avoid direct exposure based on solar peak.
+      4. If humidity is >60% alongside high heat, warn about "wet-bulb" effect and sweat evaporation failure.
+      
+      OUTPUT REQUIREMENTS:
+      1. qualitative assessments: concise (max 8 words) for temp, heatIndex, humidity, wind, uv.
+      2. summary: A high-alert, tactical briefing (max 30 words).
+      3. suggestions: A list of 3 high-precision tactical maneuvers (e.g., "Maneuver: Pre-chill core temp before 1100h", "Hydration: 4L target with electrolyte replenishment").
+      4. "peakSunHours": "HH:MM - HH:MM" window.
+      5. "coolerHours": "HH:MM - HH:MM" window.
       
       Format: JSON with keys "temp", "heatIndex", "humidity", "wind", "uv", "summary", "suggestions" (array of strings), "peakSunHours", "coolerHours".
-      IMPORTANT for "suggestions": Providing highly specific and deeply actionable advice is key. Incorporate the "peakSunHours" and "coolerHours". Target specific demographic based on their profile. Avoid generic tips.
-      - Use normal sentence case (no all-caps).
-      - Return ONLY valid JSON.
+      Return ONLY valid JSON.
+      `;
+
+      const systemPrompt = `
+      You are the AETRAXA Tactical Safety Analyst. Your ONLY purpose is to analyze weather and thermal hazard data.
+      
+      STRICT TOPIC ENFORCEMENT:
+      - Only analyze heat, humidity, UV, and survival-related environmental factors.
+      - If the user context suggests anything outside environmental safety, return a polite notification in the 'summary' that you are specialized for weather monitoring.
       `;
 
       const chatCompletion = await groq.chat.completions.create({
         messages: [
           {
             role: "system",
-            content: "You are a helpful assistant that outputs only valid JSON.",
+            content: systemPrompt,
           },
           {
             role: "user",
             content: prompt,
           },
         ],
-        model: "llama-3.3-70b-versatile",
+        model: DEFAULT_MODEL,
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 1024,
         response_format: { type: "json_object" },
       });
 
@@ -107,12 +128,58 @@ async function startServer() {
         res.status(500).json({ error: "Invalid response from AI" });
       }
     } catch (error: any) {
-      console.error("Groq API Error:", error);
-      if (error.status === 401) {
-        return res.status(401).json({ 
-          error: "Invalid Groq API Key. Please check your GROQ_API_KEY environment variable." 
-        });
-      }
+      console.error("Groq API Error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // AI Chat Assistant (Tactical Briefing)
+  app.post("/api/ai-chat", async (req, res) => {
+    try {
+      const groq = getGroqClient('aid');
+      const { messages, weatherData, userProfile, language } = req.body;
+
+      const systemPrompt = `You are the AETRAXA Tactical Intel Assistant. 
+      
+      STRICT OPERATIONAL LIMITS:
+      - MISSION: Analyze weather, heat safety, and environmental survival ONLY.
+      - RESTRICTION: You MUST NOT answer questions unrelated to weather, thermal hazards, hydration, or cooling.
+      - REFUSAL PROTOCOL: If the user asks about ANYTHING ELSE (e.g., coding, general knowledge, life advice), you MUST politely refuse and state: "Operational failure. My tactical core is only calibrated for weather and thermal hazard intelligence. Please stay on topic for a relevant briefing."
+      
+      CURRENT OPERATIONAL THEATER:
+      - City: ${weatherData?.city || 'Unknown'}
+      - Heat Index: ${weatherData?.current?.heatIndex || 'Unknown'}°C
+      - Status: ${weatherData?.current?.temp || 'Unknown'}°C, ${weatherData?.current?.humidity || 'Unknown'}% Humidity, UV ${weatherData?.current?.uvIndex || 'Unknown'}
+      
+      USER PROFILE:
+      - Occupation: ${userProfile?.occupation || 'N/A'}
+      - Vulnerability: ${(userProfile?.health_conditions || []).join(', ') || 'Standard'}
+      
+      BEHAVIOR:
+      1. Technical but extremely concise. Avoid long-winded explanations.
+      2. Prioritize life-safety and tactical cooling advice.
+      3. Language: ${language === 'ur' ? 'Reply in URDU only.' : 'Reply in ENGLISH only.'}
+      4. Be authoritative. Use bullet points for checklists. 
+      5. PARAGRAPHING: Use double line breaks between paragraphs for clarity. 
+      6. LENGTH: Keep responses short and to the point.
+      `;
+
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages
+        ],
+        model: DEFAULT_MODEL,
+        temperature: 0.8,
+        max_tokens: 1024,
+        stream: false, // Keeping it simple for first step
+      });
+
+      res.json({ 
+        content: chatCompletion.choices[0]?.message?.content || "" 
+      });
+    } catch (error: any) {
+      console.error("Chat API Error:", error.message);
       res.status(500).json({ error: error.message });
     }
   });

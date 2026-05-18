@@ -22,8 +22,6 @@ import {
   LogOut as LogOutIcon,
   Flame as FlameIcon,
   Sparkles as SparklesIcon,
-  Brain as BrainIcon,
-  Cpu as CpuIcon,
   CloudRain as RainIcon,
   ShieldAlert as ShieldAlertIcon,
   Zap as ZapIcon,
@@ -44,6 +42,7 @@ import { HeatwaveSafetyTips } from './components/HeatwaveSafetyTips';
 import { getWeatherData, calculateHeatIndex as calcHI, searchCities } from './services/weatherService';
 import { COUNTRIES, CITIES_BY_COUNTRY } from './constants/locations';
 import { useLanguage } from './LanguageContext';
+import Markdown from 'react-markdown';
 
 // --- Types & Constants ---
 
@@ -121,32 +120,32 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[150] px-4 md:px-8 py-3 flex justify-between items-center bg-[#0c0a0a]/75 backdrop-blur-md transition-all rounded-full border border-[#fff2d4]/5 shadow-2xl">
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-7xl z-[150] px-4 md:px-8 py-3 flex justify-between items-center bg-black/75 backdrop-blur-md transition-all rounded-full border border-white/5 shadow-2xl">
       <button 
         className="flex items-center gap-3 cursor-pointer focus:outline-none rounded-lg px-2 py-1" 
         onClick={() => onSectionChange('home')}
         aria-label="AETRAXA Home"
       >
-        <SunIcon className="w-5 h-5 text-[#db6321]" strokeWidth={2.5} aria-hidden="true" />
-        <span className="text-[13px] font-bold uppercase tracking-[0.4em] text-[#fff2d4]">AETRAXA</span>
+        <SunIcon className="w-5 h-5 text-primary-accent" strokeWidth={2.5} aria-hidden="true" />
+        <span className="text-[13px] font-bold uppercase tracking-[0.4em] text-white">AETRAXA</span>
       </button>
 
       {/* Desktop Menu */}
       <div className="hidden xl:flex items-center gap-6">
-        <div className="flex items-center gap-6 border-r border-[#fff2d4]/10 pr-6">
+        <div className="flex items-center gap-6 border-r border-white/10 pr-6">
           <motion.button 
             onClick={() => onSectionChange('home')} 
-            whileHover={{ y: -1, color: '#fff2d4' }}
+            whileHover={{ y: -1, color: 'var(--color-white)' }}
             whileTap={{ y: 0, scale: 0.95 }}
-            className="text-[11px] font-bold tracking-wide uppercase text-stone-400 transition-colors focus:text-[#fff2d4] focus:outline-none"
+            className="text-[11px] font-bold tracking-wide uppercase text-white/50 transition-colors focus:text-white focus:outline-none"
           >
             {t('home')}
           </motion.button>
           <motion.button 
             onClick={() => onSectionChange('about')} 
-            whileHover={{ y: -1, color: '#fff2d4' }}
+            whileHover={{ y: -1, color: 'var(--color-white)' }}
             whileTap={{ y: 0, scale: 0.95 }}
-            className="text-[11px] font-bold tracking-wide uppercase text-stone-400 transition-colors focus:text-[#fff2d4] focus:outline-none"
+            className="text-[11px] font-bold tracking-wide uppercase text-white/50 transition-colors focus:text-white focus:outline-none"
           >
             {t('about')}
           </motion.button>
@@ -156,20 +155,20 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
           {/* Temp Toggle Group */}
           <div className="relative flex items-center p-1 bg-white/5 rounded-full border border-white/10">
             <motion.div 
-              className="absolute bg-[#db6321] rounded-full z-0"
+              className="absolute bg-primary-accent rounded-full z-0"
               initial={false}
               animate={{ left: tempUnit === 'celsius' ? '4px' : '44px', width: '40px', height: 'calc(100% - 8px)' }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
             <button 
               onClick={() => setTempUnit('celsius')}
-              className={`relative z-10 flex items-center justify-center text-[9px] font-black tracking-[0.15em] transition-colors rounded-full px-3 py-1.5 min-w-[40px] text-center focus:outline-none ${tempUnit === 'celsius' ? 'text-[#0c0a0a]' : 'text-stone-400 hover:text-stone-200'}`}
+              className={`relative z-10 flex items-center justify-center text-[9px] font-black tracking-[0.15em] transition-colors rounded-full px-3 py-1.5 min-w-[40px] text-center focus:outline-none ${tempUnit === 'celsius' ? 'text-black' : 'text-white/40 hover:text-white/80'}`}
             >
               °C
             </button>
             <button 
               onClick={() => setTempUnit('fahrenheit')}
-              className={`relative z-10 flex items-center justify-center text-[9px] font-black tracking-[0.15em] transition-colors rounded-full px-3 py-1.5 min-w-[40px] text-center focus:outline-none ${tempUnit === 'fahrenheit' ? 'text-[#0c0a0a]' : 'text-stone-400 hover:text-stone-200'}`}
+              className={`relative z-10 flex items-center justify-center text-[9px] font-black tracking-[0.15em] transition-colors rounded-full px-3 py-1.5 min-w-[40px] text-center focus:outline-none ${tempUnit === 'fahrenheit' ? 'text-black' : 'text-white/40 hover:text-white/80'}`}
             >
               °F
             </button>
@@ -179,9 +178,9 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
             onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')}
             whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,242,212,0.1)' }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center text-[9px] font-black tracking-[0.2em] text-[#fff2d4] transition-all border border-[#fff2d4]/10 rounded-full px-4 py-2 text-center focus:outline-none min-w-[60px] gap-2 bg-[#0c0a0a]/40 backdrop-blur-md hover:border-[#db6321]/30"
+            className="flex items-center justify-center text-[9px] font-black tracking-[0.2em] text-white transition-all border border-white/10 rounded-full px-4 py-2 text-center focus:outline-none min-w-[60px] gap-2 bg-black/40 backdrop-blur-md hover:border-primary-accent/30"
           >
-            <GlobeIcon className="w-3.5 h-3.5 text-[#db6321]" strokeWidth={2.5} />
+            <GlobeIcon className="w-3.5 h-3.5 text-primary-accent" strokeWidth={2.5} />
             {language === 'en' ? 'EN' : 'UR'}
           </motion.button>
         </div>
@@ -190,7 +189,7 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
           onClick={onStart}
           whileHover={{ scale: 1.02, backgroundColor: '#ff7722', boxShadow: '0 0 30px rgba(219,99,33,0.4)' }}
           whileTap={{ scale: 0.98 }}
-          className="px-7 py-2.5 bg-[#db6321] rounded-full font-black text-[10px] uppercase tracking-[0.25em] transition-all text-[#0c0a0a] focus:outline-none shadow-[0_0_20px_rgba(219,99,33,0.25)] border border-[#ff9955]/30 ml-2"
+          className="px-7 py-2.5 bg-primary-accent rounded-full font-black text-[10px] uppercase tracking-[0.25em] transition-all text-black focus:outline-none shadow-[0_0_20px_rgba(219,99,33,0.25)] border border-white/20 ml-2"
         >
           {t('launchSystem')}
         </motion.button>
@@ -198,24 +197,24 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
 
       {/* Mobile Inline Controls */}
       <div className="flex xl:hidden items-center gap-1 sm:gap-2">
-        <div className="flex items-center gap-1 sm:gap-2 border-r border-[#fff2d4]/10 pr-2 sm:pr-3 mr-1">
+        <div className="flex items-center gap-1 sm:gap-2 border-r border-white/10 pr-2 sm:pr-3 mr-1">
           {/* Mobile Temp Toggle */}
           <div className="relative flex items-center p-1 bg-white/5 rounded-full border border-white/10">
             <motion.div 
-              className="absolute bg-[#db6321] rounded-full z-0"
+              className="absolute bg-primary-accent rounded-full z-0"
               initial={false}
               animate={{ left: tempUnit === 'celsius' ? '2px' : '32px', width: '30px', height: 'calc(100% - 4px)' }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
             <button 
               onClick={() => setTempUnit('celsius')}
-              className={`relative z-10 flex items-center justify-center text-[8px] font-black tracking-[0.15em] transition-colors rounded-full px-2 py-1 min-w-[30px] text-center focus:outline-none ${tempUnit === 'celsius' ? 'text-[#0c0a0a]' : 'text-stone-400'}`}
+              className={`relative z-10 flex items-center justify-center text-[8px] font-black tracking-[0.15em] transition-colors rounded-full px-2 py-1 min-w-[30px] text-center focus:outline-none ${tempUnit === 'celsius' ? 'text-black' : 'text-white/40'}`}
             >
               °C
             </button>
             <button 
               onClick={() => setTempUnit('fahrenheit')}
-              className={`relative z-10 flex items-center justify-center text-[8px] font-black tracking-[0.15em] transition-colors rounded-full px-2 py-1 min-w-[30px] text-center focus:outline-none ${tempUnit === 'fahrenheit' ? 'text-[#0c0a0a]' : 'text-stone-400'}`}
+              className={`relative z-10 flex items-center justify-center text-[8px] font-black tracking-[0.15em] transition-colors rounded-full px-2 py-1 min-w-[30px] text-center focus:outline-none ${tempUnit === 'fahrenheit' ? 'text-black' : 'text-white/40'}`}
             >
               °F
             </button>
@@ -224,16 +223,16 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
           <motion.button 
             onClick={() => setLanguage(language === 'en' ? 'ur' : 'en')}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center text-[8px] font-black tracking-[0.2em] text-[#fff2d4] transition-all border border-[#fff2d4]/10 rounded-full px-3 py-1.5 text-center focus:outline-none min-w-[45px] gap-1 bg-[#0c0a0a]/40 backdrop-blur-md"
+            className="flex items-center justify-center text-[8px] font-black tracking-[0.2em] text-white transition-all border border-white/10 rounded-full px-3 py-1.5 text-center focus:outline-none min-w-[45px] gap-1 bg-black/40 backdrop-blur-md"
           >
-            <GlobeIcon className="w-3 h-3 text-[#db6321]" strokeWidth={2.5} />
+            <GlobeIcon className="w-3 h-3 text-primary-accent" strokeWidth={2.5} />
             {language === 'en' ? 'EN' : 'UR'}
           </motion.button>
         </div>
 
         <button 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="p-1.5 sm:p-2 text-[#fff2d4] focus:outline-none hover:bg-white/5 rounded-full transition-colors border border-transparent hover:border-white/10"
+          className="p-1.5 sm:p-2 text-white focus:outline-none hover:bg-white/5 rounded-full transition-colors border border-transparent hover:border-white/10"
         >
           {isMenuOpen ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
         </button>
@@ -246,24 +245,24 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute top-[calc(100%+10px)] right-0 w-56 sm:w-64 bg-[#0c0a0a]/95 backdrop-blur-xl border border-[#fff2d4]/10 rounded-3xl p-4 flex flex-col gap-2 shadow-2xl xl:hidden overflow-hidden"
+            className="absolute top-[calc(100%+10px)] right-0 w-56 sm:w-64 bg-black/95 backdrop-blur-xl border border-white/10 rounded-3xl p-4 flex flex-col gap-2 shadow-2xl xl:hidden overflow-hidden"
           >
             <button 
               onClick={() => { setIsMenuOpen(false); onSectionChange('home'); }}
-              className="w-full text-left px-4 py-3 text-xs font-bold tracking-widest uppercase text-stone-300 hover:text-[#fff2d4] hover:bg-white/5 rounded-2xl transition-colors"
+              className="w-full text-left px-4 py-3 text-xs font-bold tracking-widest uppercase text-white/60 hover:text-white hover:bg-white/5 rounded-2xl transition-colors"
             >
               {t('home')}
             </button>
             <button 
               onClick={() => { setIsMenuOpen(false); onSectionChange('about'); }}
-              className="w-full text-left px-4 py-3 text-xs font-bold tracking-widest uppercase text-stone-300 hover:text-[#fff2d4] hover:bg-white/5 rounded-2xl transition-colors"
+              className="w-full text-left px-4 py-3 text-xs font-bold tracking-widest uppercase text-white/60 hover:text-white hover:bg-white/5 rounded-2xl transition-colors"
             >
               {t('about')}
             </button>
-            <div className="w-full h-[1px] bg-[#fff2d4]/10 my-2" />
+            <div className="w-full h-[1px] bg-white/10 my-2" />
             <button 
               onClick={() => { setIsMenuOpen(false); onStart(); }}
-              className="w-full bg-[#db6321] text-[#0c0a0a] px-4 py-3 text-xs font-black tracking-[0.2em] uppercase rounded-2xl shadow-lg"
+              className="w-full bg-primary-accent text-black px-4 py-3 text-xs font-black tracking-[0.2em] uppercase rounded-2xl shadow-lg"
             >
               {t('launchSystem')}
             </button>
@@ -346,12 +345,12 @@ export const SearchableDropdown = React.memo(({
         onKeyDown={handleKeyDown}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`w-full min-h-[48px] bg-transparent border ${isOpen ? 'border-[#db6321]/50 shadow-[0_0_10px_rgba(197,87,27,0.1)]' : 'border-[#0c0a0a]'} rounded-full px-5 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-all group ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus:outline-none focus:border-stone-600'}`}
+        className={`w-full min-h-[48px] bg-transparent border ${isOpen ? 'border-primary-accent/50 shadow-[0_0_10px_rgba(197,87,27,0.1)]' : 'border-black'} rounded-full px-5 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-all group ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus:outline-none focus:border-white/20'}`}
       >
-        <span className={`${value ? 'text-[#fff2d4]' : 'text-[#888]'} truncate mr-2 font-semibold`}>
+        <span className={`${value ? 'text-white' : 'text-white/30'} truncate mr-2 font-semibold`}>
           {value || placeholder}
         </span>
-        <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-90 text-[#fff2d4]' : 'text-stone-500'}`} aria-hidden="true" />
+        <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-90 text-white' : 'text-white/40'}`} aria-hidden="true" />
       </button>
 
       <AnimatePresence>
@@ -362,9 +361,9 @@ export const SearchableDropdown = React.memo(({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 w-full mt-2 bg-[#0A0A0A] border border-[#0c0a0a] rounded-2xl overflow-hidden z-[100] shadow-2xl backdrop-blur-xl"
+            className="absolute top-full left-0 w-full mt-2 bg-black border border-white/10 rounded-2xl overflow-hidden z-[100] shadow-2xl backdrop-blur-xl"
           >
-            <div className="p-3 border-b border-[#0c0a0a]">
+            <div className="p-3 border-b border-white/5">
               <input 
                 autoFocus
                 type="text"
@@ -376,7 +375,7 @@ export const SearchableDropdown = React.memo(({
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') setIsOpen(false);
                 }}
-                className="w-full bg-[#0c0a0a] border border-[#0c0a0a] rounded-lg px-3 py-1.5 text-sm text-[#fff2d4] focus:outline-none focus:border-[#db6321]/30 font-bold"
+                className="w-full bg-black border border-white/5 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary-accent/30 font-bold"
               />
             </div>
             <div className="max-h-60 overflow-y-auto custom-scrollbar">
@@ -404,20 +403,20 @@ export const SearchableDropdown = React.memo(({
                           setSearch('');
                         }
                       }}
-                      className={`px-5 py-3 text-sm cursor-pointer hover:bg-orange-500/10 focus:bg-orange-500/10 focus:outline-none transition-colors flex justify-between items-center group/item ${isSelected ? 'bg-orange-500/5 text-orange-400' : 'text-stone-400 hover:text-[#fff2d4] focus:text-[#fff2d4]'}`}
+                      className={`px-5 py-3 text-sm cursor-pointer hover:bg-orange-500/10 focus:bg-orange-500/10 focus:outline-none transition-colors flex justify-between items-center group/item ${isSelected ? 'bg-orange-500/5 text-orange-400' : 'text-white/40 hover:text-white focus:text-white'}`}
                     >
                       <div className="flex flex-col">
-                        <span className={`${isSelected ? 'text-orange-400' : 'text-stone-300 focus:text-[#fff2d4]'} font-bold`}>{label}</span>
+                        <span className={`${isSelected ? 'text-orange-400' : 'text-white/60 focus:text-white'} font-bold`}>{label}</span>
                         {opt.type && (
-                          <span className="text-[10px] uppercase tracking-widest text-stone-500 font-black">{opt.type}</span>
+                          <span className="text-[10px] uppercase tracking-widest text-white/30 font-black">{opt.type}</span>
                         )}
                       </div>
-                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_#db6321]" aria-hidden="true" />}
+                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_var(--color-primary-accent)]" aria-hidden="true" />}
                     </div>
                   );
                 })
               ) : (
-                <div role="status" className="p-5 text-center text-xs text-stone-500 uppercase tracking-widest">No results found</div>
+                <div role="status" className="p-5 text-center text-xs text-white/30 uppercase tracking-widest">No results found</div>
               )}
             </div>
           </motion.div>
@@ -478,6 +477,11 @@ export default function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [lastAnalysisTime, setLastAnalysisTime] = useState<number>(0);
+  const [lastChatTime, setLastChatTime] = useState<number>(0);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -486,8 +490,14 @@ export default function App() {
   const { language, t } = useLanguage();
 
   const getAIInsights = useCallback(async (data: WeatherData) => {
+    const now = Date.now();
+    if (now - lastAnalysisTime < 60000 && aiInsights) {
+      console.log("Analysis cooldown active. Using cached insights.");
+      return;
+    }
+    
     setAiLoading(true);
-    setAiInsights(null); // Reset
+    // setAiInsights(null); // Remove reset to avoid flickering during cooldown-blocked refreshes or quick searches
     try {
       const response = await fetch('/api/ai-insights', {
         method: 'POST',
@@ -498,6 +508,7 @@ export default function App() {
       if (response.ok) {
         const insights = await response.json();
         setAiInsights(insights);
+        setLastAnalysisTime(Date.now());
       } else if (response.status === 401) {
         setAiInsights({ 
           summary: "Invalid Groq API Key detected. Please ensure you have set a valid GROQ_API_KEY in the application settings.", 
@@ -527,6 +538,45 @@ export default function App() {
       setAiLoading(false);
     }
   }, [language]);
+
+  const handleSendChatMessage = useCallback(async (message: string) => {
+    if (!message.trim() || !weather) return;
+
+    const now = Date.now();
+    if (now - lastChatTime < 60000) {
+      const remaining = Math.ceil((60000 - (now - lastChatTime)) / 1000);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `Protocol delay active. Next transmission ready in ${remaining}s.` }]);
+      return;
+    }
+
+    const newUserMessage = { role: 'user', content: message };
+    setChatMessages(prev => [...prev, newUserMessage]);
+    setIsChatLoading(true);
+
+    try {
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [...chatMessages, newUserMessage],
+          weatherData: weather,
+          language 
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
+        setLastChatTime(Date.now());
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: "Protocol failure. Briefing interrupted." }]);
+      }
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: "Communication link severed. Signal lost." }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  }, [chatMessages, weather, language]);
 
   const processLocation = useCallback(async (latitude: number, longitude: number, cityName?: string) => {
     try {
@@ -693,6 +743,15 @@ export default function App() {
     e?.preventDefault();
     if (!selectedCity) return;
 
+    const now = Date.now();
+    if (now - lastAnalysisTime < 60000 && weather) {
+      // If it's a completely new city, maybe allow? 
+      // But the user said 1 min cooldown for the feature.
+      // So let's stick to strict 1 min for the button.
+      console.log("Analysis cooldown active.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -753,7 +812,7 @@ export default function App() {
   }, [weather]);
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans bg-[#0c0a0a] overflow-x-hidden selection:bg-orange-500/30">
+    <div className="relative min-h-screen flex flex-col font-sans bg-black overflow-x-hidden selection:bg-primary-accent/30">
       <TempUnitContext.Provider value={{ tempUnit, setTempUnit }}>
       {/* Background Glow Effects */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
@@ -778,7 +837,7 @@ export default function App() {
       >
         <a 
           href="#main-content" 
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:px-4 focus:py-2 focus:bg-orange-600 focus:text-[#fff2d4] focus:top-4 focus:left-4 focus:rounded-full focus:font-bold"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:px-4 focus:py-2 focus:bg-primary-accent focus:text-white focus:top-4 focus:left-4 focus:rounded-full focus:font-bold"
         >
           Skip to main content
         </a>
@@ -861,6 +920,8 @@ export default function App() {
                 handleCitySearch={handleCitySearch}
                 onLocateMe={handleLocateMe}
                 isLocating={isLocating}
+                onOpenAssistant={() => setIsAssistantOpen(true)}
+                lastAnalysisTime={lastAnalysisTime}
               />
             </motion.div>
           ) : currentPage === Page.About ? (
@@ -877,6 +938,15 @@ export default function App() {
         </AnimatePresence>
         </main>
 
+        <AssistantDrawer 
+          isOpen={isAssistantOpen} 
+          onClose={() => setIsAssistantOpen(false)}
+          messages={chatMessages}
+          onSendMessage={handleSendChatMessage}
+          isLoading={isChatLoading}
+          lastChatTime={lastChatTime}
+        />
+
         <AppFooter />
       </div>
 
@@ -888,6 +958,244 @@ export default function App() {
     </div>
   );
 }
+
+// --- Assistant Components ---
+
+const AssistantDrawer = ({ isOpen, onClose, messages, onSendMessage, isLoading, lastChatTime }: any) => {
+  const { t } = useLanguage();
+  const [input, setInput] = React.useState('');
+  const [cooldownRemaining, setCooldownRemaining] = React.useState(0);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const [width, setWidth] = React.useState(448);
+  const [isResizing, setIsResizing] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const diff = 60000 - (now - lastChatTime);
+      setCooldownRemaining(Math.max(0, Math.ceil(diff / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastChatTime]);
+
+  const startResizing = React.useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = React.useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = React.useCallback((mouseMoveEvent: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = window.innerWidth - mouseMoveEvent.clientX;
+      if (newWidth > 320 && newWidth < window.innerWidth * 0.7) {
+        setWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  React.useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResizing);
+    }
+    return () => {
+      window.removeEventListener("mousemove", resize);
+      window.removeEventListener("mouseup", stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  // Auto-resize textarea
+  React.useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
+    }
+  }, [input]);
+
+  const handleSend = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    onSendMessage(input);
+    setInput('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000]"
+          />
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            style={{ width: `${width}px` }}
+            className={`fixed top-0 right-0 h-full bg-black border-l border-white/10 z-[1100] shadow-2xl flex flex-col ${isResizing ? 'select-none' : ''}`}
+          >
+            {/* Resize Handle */}
+            <div 
+              onMouseDown={startResizing}
+              className="absolute left-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-primary-accent/30 transition-colors z-[1101]"
+            />
+
+            {/* Header */}
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/50">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                  <SparklesIcon className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('tacticalAssistant')}</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
+                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Active Link</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-white/5 text-white/40 hover:text-white transition-colors"
+                aria-label="Close assistant"
+              >
+                <CloseIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div 
+              ref={scrollRef}
+              className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar"
+            >
+              {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-8">
+                  <SparklesIcon className="w-12 h-12 text-white mb-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
+                    Link Established. State your inquiry for tactical assessment.
+                  </p>
+                </div>
+              ) : (
+                messages.map((m: any, i: number) => (
+                  <MessageBubble key={i} message={m} />
+                ))
+              )}
+              {isLoading && (
+                <div className="flex gap-4 items-start animate-pulse">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex-shrink-0" />
+                  <div className="space-y-2 flex-grow">
+                    <div className="h-2 bg-white/5 rounded-full w-full" />
+                    <div className="h-2 bg-white/5 rounded-full w-2/3" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-6 border-t border-white/5 bg-black/50">
+              <form onSubmit={handleSend} className="relative flex items-end gap-3">
+                <div className="relative flex-grow min-h-[52px] flex items-center">
+                  {cooldownRemaining > 0 && (
+                    <div className="absolute -top-6 right-0 flex items-center gap-2 px-3 py-1 bg-orange-600/10 border border-orange-600/20 rounded-full backdrop-blur-sm">
+                       <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                       <span className="text-[7px] font-black text-orange-500 uppercase tracking-[0.2em]">
+                         Protocol Calibration: {cooldownRemaining}s
+                       </span>
+                    </div>
+                  )}
+                  <textarea 
+                    ref={textareaRef}
+                    autoFocus
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={cooldownRemaining > 0}
+                    placeholder={cooldownRemaining > 0 
+                      ? "Standby for tactical sync..."
+                      : t('chatPlaceholder')}
+                    className="w-full bg-black border border-white/10 rounded-2xl px-5 py-[15px] text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-orange-500/50 transition-all font-medium resize-none min-h-[52px] max-h-[180px] custom-scrollbar disabled:opacity-30 overflow-hidden leading-tight"
+                    rows={1}
+                  />
+                  {cooldownRemaining > 0 && (
+                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-white/10 overflow-hidden rounded-b-2xl">
+                      <motion.div 
+                        key={lastChatTime}
+                        initial={{ width: `${Math.max(0, Math.min(100, (60000 - (Date.now() - lastChatTime)) / 60000 * 100))}%` }}
+                        animate={{ width: '0%' }}
+                        transition={{ duration: cooldownRemaining, ease: "linear" }}
+                        className="h-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+                      />
+                    </div>
+                  )}
+                </div>
+                <button 
+                  disabled={!input.trim() || isLoading || cooldownRemaining > 0}
+                  type="submit"
+                  className="h-[52px] px-6 rounded-xl bg-orange-600 text-black font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 disabled:bg-stone-800 disabled:text-stone-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-600/20 flex-shrink-0 flex items-center justify-center self-end"
+                >
+                  {isLoading ? '...' : cooldownRemaining > 0 ? `${cooldownRemaining}s` : t('send')}
+                </button>
+              </form>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const MessageBubble = ({ message }: { message: any }) => {
+  const isAssistant = message.role === 'assistant';
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`flex gap-4 items-start ${isAssistant ? '' : 'flex-row-reverse'}`}
+    >
+      <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center border ${
+        isAssistant 
+          ? 'bg-orange-500/10 border-orange-500/20 text-orange-500' 
+          : 'bg-white/5 border-white/10 text-white'
+      }`}>
+        {isAssistant ? <SparklesIcon className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />}
+      </div>
+      <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] leading-relaxed font-medium ${
+        isAssistant 
+          ? 'bg-white/[0.03] border border-white/5 text-white' 
+          : 'bg-orange-600 text-black'
+      }`}>
+        {isAssistant ? (
+          <div className="prose-custom max-w-none">
+            <Markdown>{message.content}</Markdown>
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap">{message.content}</div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 // --- Landing Sub-Components ---
 
@@ -942,14 +1250,14 @@ const ThermalHotspots = React.memo(() => {
 
   return (
     <div className="w-full max-w-7xl mt-12 px-4">
-      <div className="bg-[#0c0a0a]/75 rounded-[2.5rem] md:rounded-[3rem] py-12 md:py-16 px-6 md:px-12 backdrop-blur-md border border-[#fff2d4]/5">
+      <div className="bg-black/75 rounded-[2.5rem] md:rounded-[3rem] py-12 md:py-16 px-6 md:px-12 backdrop-blur-md border border-white/5">
       <div className="flex flex-col items-start mb-10 w-full">
         <div className="flex items-center gap-3 mb-3">
-          <FlameIcon className="w-5 h-5 text-orange-500" />
-          <span className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em]">{t('criticalHeatLabel')}</span>
+          <FlameIcon className="w-5 h-5 text-primary-accent" />
+          <span className="text-primary-accent text-[10px] font-black uppercase tracking-[0.2em]">{t('criticalHeatLabel')}</span>
         </div>
-        <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-[#fff2d4]">
-          {t('thermalHotspotsTitle1')} <span className="text-orange-500 italic">{t('thermalHotspotsTitle2')}</span>
+        <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-white">
+          {t('thermalHotspotsTitle1')} <span className="text-primary-accent italic">{t('thermalHotspotsTitle2')}</span>
         </h3>
       </div>
 
@@ -964,16 +1272,16 @@ const ThermalHotspots = React.memo(() => {
             viewport={{ once: true, margin: "-50px" }}
             className="group relative"
           >
-            <div className="absolute inset-0 bg-orange-600/20 blur-[30px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="relative bg-[#0c0a0a]/60 border border-[#fff2d4]/5 p-8 rounded-[2.5rem] group-hover:border-orange-500/30 transition-all flex flex-col gap-8 overflow-hidden h-full min-h-[260px]">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/5 blur-[40px] rounded-full -mr-16 -mt-16 group-hover:bg-orange-600/10 transition-colors" />
+            <div className="absolute inset-0 bg-primary-accent/20 blur-[30px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="relative bg-black/60 border border-white/5 p-8 rounded-[2.5rem] group-hover:border-primary-accent/30 transition-all flex flex-col gap-8 overflow-hidden h-full min-h-[260px]">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary-accent/5 blur-[40px] rounded-full -mr-16 -mt-16 group-hover:bg-primary-accent/10 transition-colors" />
               
               <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-1.5">
-                  <span className={`text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em] ${loading ? 'bg-[#fff2d4]/10 w-16 h-3 rounded animate-pulse' : ''}`}>
+                  <span className={`text-white/40 text-[10px] font-bold uppercase tracking-[0.2em] ${loading ? 'bg-white/10 w-16 h-3 rounded animate-pulse' : ''}`}>
                     {!loading && h.country}
                   </span>
-                  <span className={`text-[#fff2d4] text-lg font-black uppercase tracking-wider ${loading ? 'bg-[#fff2d4]/10 w-24 h-6 rounded animate-pulse mt-1' : ''}`}>
+                  <span className={`text-white text-lg font-black uppercase tracking-wider ${loading ? 'bg-white/10 w-24 h-6 rounded animate-pulse mt-1' : ''}`}>
                     {!loading && h.city}
                   </span>
                 </div>
@@ -982,22 +1290,22 @@ const ThermalHotspots = React.memo(() => {
                     <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                     <span className="text-[8px] font-bold text-red-500 uppercase tracking-widest font-sans">{t('live')}</span>
                   </div>
-                  <span className={`text-stone-500 text-[10px] font-bold uppercase tracking-widest ${loading ? 'bg-[#fff2d4]/5 w-16 h-3 rounded animate-pulse mt-1' : ''}`}>
+                  <span className={`text-white/30 text-[10px] font-bold uppercase tracking-widest ${loading ? 'bg-white/5 w-16 h-3 rounded animate-pulse mt-1' : ''}`}>
                     {!loading && h.peakTemp !== null && `${t('peak')}: ${Math.floor(formatTemp(h.peakTemp, tempUnit))}°`}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-baseline gap-2 mt-auto">
-                <span className={`text-6xl font-black text-[#fff2d4] font-mono tracking-tighter ${loading ? 'bg-[#fff2d4]/10 w-20 h-14 rounded animate-pulse' : ''}`}>
+                <span className={`text-6xl font-black text-white font-mono tracking-tighter ${loading ? 'bg-white/10 w-20 h-14 rounded animate-pulse' : ''}`}>
                   {!loading && `${Math.round(formatTemp(h.temp, tempUnit))}°`}
                 </span>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-orange-500 uppercase leading-none font-sans tracking-wide">{!loading && getDangerLevel(h.temp).label}</span>
+                  <span className="text-[10px] font-bold text-primary-accent uppercase leading-none font-sans tracking-wide">{!loading && getDangerLevel(h.temp).label}</span>
                 </div>
               </div>
 
-              <div className="w-full bg-[#fff2d4]/5 h-1.5 rounded-full overflow-hidden">
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   whileInView={{ width: loading ? 0 : `${(h.temp/50) * 100}%` }}
@@ -1028,7 +1336,7 @@ const DidYouKnow = React.memo(() => {
       title: t('fact1Title'),
       text: t('fact1Text'),
       accent: "text-orange-500",
-      icon: <BrainIcon className="w-5 h-5" />
+      icon: <SparklesIcon className="w-5 h-5" />
     },
     {
       title: t('fact2Title'),
@@ -1046,14 +1354,14 @@ const DidYouKnow = React.memo(() => {
 
   return (
     <div className="w-full max-w-7xl mt-32 mb-20 px-4">
-      <div className="bg-[#0c0a0a]/75 rounded-[2.5rem] md:rounded-[3rem] py-12 md:py-16 px-6 md:px-12 backdrop-blur-md border border-[#fff2d4]/5">
+      <div className="bg-black/75 rounded-[2.5rem] md:rounded-[3rem] py-12 md:py-16 px-6 md:px-12 backdrop-blur-md border border-white/5">
       <div className="flex flex-col items-start mb-14 w-full">
         <div className="flex items-center gap-3 mb-3">
-          <CpuIcon className="w-5 h-5 text-orange-500 animate-pulse" />
-          <span className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em]">{t('deepFieldIntel')}</span>
+          <SparklesIcon className="w-5 h-5 text-primary-accent animate-pulse" />
+          <span className="text-primary-accent text-[10px] font-black uppercase tracking-[0.2em]">{t('deepFieldIntel')}</span>
         </div>
-        <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-[#fff2d4]">
-          {t('aetraxaProtocols1')} <span className="text-orange-500 italic">{t('aetraxaProtocols2')}</span>
+        <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-white">
+          {t('aetraxaProtocols1')} <span className="text-primary-accent italic">{t('aetraxaProtocols2')}</span>
         </h3>
       </div>
 
@@ -1068,23 +1376,23 @@ const DidYouKnow = React.memo(() => {
             viewport={{ once: true, margin: "-50px" }}
             className="group relative"
           >
-            <div className="absolute -inset-1 bg-gradient-to-b from-orange-500/10 to-transparent rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition duration-500" />
-            <div className="relative p-10 bg-[#0c0a0a]/60 border border-[#fff2d4]/5 rounded-[2.5rem] flex flex-col gap-6 group hover:border-orange-500/20 transition-all h-full shadow-2xl overflow-hidden">
-               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute -inset-1 bg-gradient-to-b from-primary-accent/10 to-transparent rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition duration-500" />
+            <div className="relative p-10 bg-black/60 border border-white/5 rounded-[2.5rem] flex flex-col gap-6 group hover:border-primary-accent/20 transition-all h-full shadow-2xl overflow-hidden">
+               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary-accent/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
-              <div className={`p-4 rounded-2xl bg-[#fff2d4]/5 border border-[#fff2d4]/5 ${f.accent} group-hover:bg-[#fff2d4]/10 transition-all w-fit shadow-inner`}>
+              <div className={`p-4 rounded-2xl bg-white/5 border border-white/5 ${f.accent} group-hover:bg-white/10 transition-all w-fit shadow-inner`}>
                 {f.icon}
               </div>
               <div className="space-y-3">
-                <h4 className="text-lg font-black uppercase tracking-tight text-[#fff2d4] leading-tight group-hover:text-orange-500 transition-colors">{f.title}</h4>
-                <p className="text-sm text-stone-400 leading-relaxed font-bold tracking-wide italic">"{f.text}"</p>
+                <h4 className="text-lg font-black uppercase tracking-tight text-white leading-tight group-hover:text-primary-accent transition-colors">{f.title}</h4>
+                <p className="text-sm text-white/40 leading-relaxed font-bold tracking-wide italic">"{f.text}"</p>
               </div>
               
-              <div className="mt-auto pt-6 flex items-center justify-between border-t border-[#fff2d4]/5">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-600">{t('activeIntelligence')}</span>
+              <div className="mt-auto pt-6 flex items-center justify-between border-t border-white/5">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">{t('activeIntelligence')}</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-orange-500 animate-ping" />
-                  <span className="text-[9px] font-black text-orange-500 uppercase">{t('verified')}</span>
+                  <div className="w-1 h-1 rounded-full bg-primary-accent animate-ping" />
+                  <span className="text-[9px] font-black text-primary-accent uppercase">{t('verified')}</span>
                 </div>
               </div>
             </div>
@@ -1176,7 +1484,7 @@ const RadialDangerGauge = ({ heatIndex, currentLevel, isHighRisk, t }: { heatInd
     <div className={`relative flex flex-col items-center justify-center w-full pb-8`}>
       {/* Soft background glow */}
       <div className="absolute inset-x-0 bottom-12 top-1/2 flex items-center justify-center pointer-events-none">
-         <div className="w-56 h-56 bg-[#db6321]/20 blur-[80px] rounded-full mix-blend-screen" />
+         <div className="w-56 h-56 bg-primary-accent/20 blur-[80px] rounded-full mix-blend-screen" />
       </div>
 
       <svg width="100%" height="auto" viewBox="0 0 400 290" className="overflow-visible z-10 relative" preserveAspectRatio="xMidYMid meet">
@@ -1457,7 +1765,7 @@ function LandingPage({
         }}
         className="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto mt-0 mb-8"
       >
-        <div className="w-full h-full flex flex-col items-center justify-center text-center bg-[#0c0a0a]/75 rounded-[2.5rem] md:rounded-[3rem] py-16 md:py-24 px-6 md:px-12 backdrop-blur-md border border-[#fff2d4]/5">
+        <div className="w-full h-full flex flex-col items-center justify-center text-center bg-black/75 rounded-[2.5rem] md:rounded-[3rem] py-16 md:py-24 px-6 md:px-12 backdrop-blur-md border border-white/5">
           <motion.div
             variants={{
               hidden: { y: 40, opacity: 0 },
@@ -1465,30 +1773,30 @@ function LandingPage({
             }}
             className="space-y-6 relative z-10 flex flex-col items-center w-full"
           >
-            <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border border-[#db6321] bg-[#0c0a0a]/40 backdrop-blur-md ${language === 'ur' ? 'mb-12' : 'mb-6'}`}>
-              <div className="w-1.5 h-1.5 rounded-full bg-[#db6321] shadow-[0_0_8px_rgba(216,98,33,0.6)]" />
-              <span className="text-xs sm:text-sm font-semibold text-[#db6321] tracking-wider text-center">{t('systemActive')}</span>
+            <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border border-primary-accent bg-black/40 backdrop-blur-md ${language === 'ur' ? 'mb-12' : 'mb-6'}`}>
+              <div className="w-1.5 h-1.5 rounded-full bg-primary-accent shadow-[0_0_8px_rgba(216,98,33,0.6)]" />
+              <span className="text-xs sm:text-sm font-semibold text-primary-accent tracking-wider text-center">{t('systemActive')}</span>
             </div>
             
             <h1 className="text-5xl sm:text-[10vw] lg:text-[7.5rem] font-display font-black leading-[0.85] text-center tracking-tight">
               {language === 'en' ? (
                 <>
-                  <span className="text-[#fff2d4]">IS IT </span>
-                  <span className="text-[#db6321]">SAFE</span><br/>
-                  <span className="text-[#db6321]">OUTSIDE </span>
-                  <span className="text-[#fff2d4]">TODAY?</span>
+                  <span className="text-white">IS IT </span>
+                  <span className="text-primary-accent">SAFE</span><br/>
+                  <span className="text-primary-accent">OUTSIDE </span>
+                  <span className="text-white">TODAY?</span>
                 </>
               ) : (
                 <>
-                  <span className="text-[#fff2d4]">کیا آج باہر جانا </span>
-                  <span className="text-[#db6321]">محفوظ ہے؟</span>
+                  <span className="text-white">کیا آج باہر جانا </span>
+                  <span className="text-primary-accent">محفوظ ہے؟</span>
                 </>
               )}
             </h1>
             
-            <div className="w-32 h-[3px] bg-[#db6321] my-8 rounded-full opacity-80" />
+            <div className="w-32 h-[3px] bg-primary-accent my-8 rounded-full opacity-80" />
             
-            <p className="text-sm md:text-xl text-[#fff2d4] font-medium tracking-wide max-w-2xl mx-auto leading-relaxed pt-2">
+            <p className="text-sm md:text-xl text-white font-medium tracking-wide max-w-2xl mx-auto leading-relaxed pt-2">
               {t('landingDesc')}
             </p>
           </motion.div>
@@ -1498,7 +1806,7 @@ function LandingPage({
                hidden: { y: 30, opacity: 0 },
                visible: { y: 0, opacity: 1, transition: { duration: 0.8 } }
              }}
-             className="mt-16 flex flex-col md:flex-row items-center gap-4 w-full max-w-4xl bg-[#0a0a0a]/90 p-3 md:p-4 rounded-[3rem] border border-[#db6321]/30 backdrop-blur-3xl relative z-50 transition-colors shadow-2xl"
+             className="mt-16 flex flex-col md:flex-row items-center gap-4 w-full max-w-4xl bg-black/90 p-3 md:p-4 rounded-[3rem] border border-primary-accent/30 backdrop-blur-3xl relative z-50 transition-colors shadow-2xl"
           >
             <div className="flex flex-col sm:flex-row gap-3 w-full">
               <div className="flex-1">
@@ -1613,23 +1921,36 @@ const MainAppPage = React.memo(({
   setDynamicCities,
   handleCitySearch,
   onLocateMe,
-  isLocating
+  isLocating,
+  onOpenAssistant,
+  lastAnalysisTime
 }: any) => {
   const currentLevel = weather ? getDangerLevel(weather.current.heatIndex) : null;
   const isHighRisk = weather && weather.current.heatIndex >= 32;
   const { tempUnit } = useTempUnit();
   const tempUnitStr = tempUnit === 'celsius' ? '°C' : '°F';
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+
+  const [cooldownRemaining, setCooldownRemaining] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const diff = 60000 - (now - lastAnalysisTime);
+      setCooldownRemaining(Math.max(0, Math.ceil(diff / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastAnalysisTime]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 pt-24 pb-20 flex flex-col gap-10">
       {/* Search & Location Bar */}
-      <section className="bg-[#0c0a0a]/75 backdrop-blur-md rounded-[2.5rem] p-4 md:p-6 border border-[#fff2d4]/5 flex flex-col xl:flex-row items-center gap-6 relative z-[100]">
+      <section className="bg-black/75 backdrop-blur-md rounded-[2.5rem] p-4 md:p-6 border border-white/5 flex flex-col xl:flex-row items-center gap-6 relative z-[100]">
         <div className="flex-grow flex flex-col min-w-0 px-4">
-           <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-[#fff2d4] truncate">
+           <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white truncate">
              {weather ? weather.city : t('selectLocation')}
            </h2>
-           <p className="text-[10px] text-orange-500 font-black uppercase tracking-[0.4em] mt-1">
+           <p className="text-[10px] text-primary-accent font-black uppercase tracking-[0.4em] mt-1">
              {weather ? `${selectedCountry} • ${t('globalPosition' as any)}` : t('initialScan' as any)}
            </p>
         </div>
@@ -1663,7 +1984,7 @@ const MainAppPage = React.memo(({
                 whileHover={{ scale: 1.05, backgroundColor: 'rgba(219,99,33,0.1)' }}
                 whileTap={{ scale: 0.95 }}
                 disabled={isLocating}
-                className="p-3.5 rounded-full border border-[#db6321]/30 text-[#db6321] transition-all"
+                className="p-3.5 rounded-full border border-primary-accent/30 text-primary-accent transition-all"
               >
                 <NavigationIcon className={`w-4 h-4 ${isLocating ? 'animate-spin' : ''}`} />
               </motion.button>
@@ -1674,14 +1995,14 @@ const MainAppPage = React.memo(({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => selectedCity && onSearch({ preventDefault: () => {} } as any)}
-            disabled={!selectedCity || loading}
+            disabled={!selectedCity || loading || cooldownRemaining > 0}
             className={`whitespace-nowrap h-[48px] px-10 rounded-full font-bold text-sm uppercase tracking-wider transition-colors duration-200 w-full xl:w-auto ${
-              !selectedCity || loading 
-                ? 'bg-[#0c0a0a] text-stone-600 cursor-not-allowed' 
-                : 'bg-[#db6321] text-[#0c0a0a] hover:bg-[#db6321] shadow-[0_0_20px_rgba(197,87,27,0.3)]'
+              !selectedCity || loading || cooldownRemaining > 0
+                ? 'bg-black text-white/30 cursor-not-allowed' 
+                : 'bg-primary-accent text-black hover:bg-primary-accent shadow-[0_0_20px_rgba(219,99,33,0.3)]'
             }`}
           >
-            {loading ? t('analyzing') : t('analyzeHeat')}
+            {loading ? t('analyzing') : cooldownRemaining > 0 ? `${t('analyzeHeat')} (${cooldownRemaining}s)` : t('analyzeHeat')}
           </motion.button>
         </div>
       </section>
@@ -1700,17 +2021,17 @@ const MainAppPage = React.memo(({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.3 }}
-          className="flex-grow flex flex-col items-center justify-center py-32 gap-8 bg-[#0c0a0a]/75 backdrop-blur-md rounded-[3rem] border border-[#fff2d4]/5"
+          className="flex-grow flex flex-col items-center justify-center py-32 gap-8 bg-black/75 backdrop-blur-md rounded-[3rem] border border-white/5"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-orange-500/20 blur-3xl rounded-full animate-pulse" />
-            <div className="relative p-10 rounded-full bg-[#0c0a0a] border border-[#db6321]/30">
-               <SunIcon className="w-16 h-16 text-[#db6321]" />
+            <div className="absolute inset-0 bg-primary-accent/20 blur-3xl rounded-full animate-pulse" />
+            <div className="relative p-10 rounded-full bg-black border border-primary-accent/30">
+               <SunIcon className="w-16 h-16 text-primary-accent" />
             </div>
           </div>
           <div className="text-center space-y-4">
-            <h3 className="text-xl font-black uppercase tracking-[0.5em] text-[#fff2d4]">{t('atmosphericIntelligence')}</h3>
-            <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
+            <h3 className="text-xl font-black uppercase tracking-[0.5em] text-white">{t('atmosphericIntelligence')}</h3>
+            <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
               Scan initialized. Please select coordinates above to begin heatwave analysis.
             </p>
           </div>
@@ -1724,13 +2045,13 @@ const MainAppPage = React.memo(({
           className="grid grid-cols-1 lg:grid-cols-12 gap-8"
         >
           {/* Hero Section: Gauge and Primary Metrics */}
-          <section className="lg:col-span-12 xl:col-span-8 bg-[#0c0a0a]/75 backdrop-blur-md rounded-[3rem] border border-[#fff2d4]/5 p-5 sm:p-8 md:p-12 relative overflow-hidden flex flex-col items-center">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600/5 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none" />
+          <section className="lg:col-span-12 xl:col-span-8 bg-black/75 backdrop-blur-md rounded-[3rem] border border-white/5 p-5 sm:p-8 md:p-12 relative overflow-hidden flex flex-col items-center">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-primary-accent/5 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none" />
             
             <div className="w-full flex justify-between items-start mb-12 relative z-10">
-               <div className="flex items-center gap-4 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-full">
-                 <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">{t('liveAtmosphere' as any)}</span>
+               <div className="flex items-center gap-4 bg-primary-accent/10 border border-primary-accent/20 px-4 py-2 rounded-full">
+                 <div className="w-2 h-2 rounded-full bg-primary-accent animate-pulse" />
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-accent">{t('liveAtmosphere' as any)}</span>
                </div>
                
                <div className="flex items-center gap-3">
@@ -1741,7 +2062,7 @@ const MainAppPage = React.memo(({
                      e.stopPropagation();
                      handleShare();
                    }} 
-                   className="p-3 rounded-full bg-white/5 border border-white/10 text-[#fff2d4] hover:bg-white/10 transition-all cursor-pointer relative z-20"
+                   className="p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all cursor-pointer relative z-20"
                  >
                    <ShareIcon className="w-5 h-5 pointer-events-none" />
                  </motion.button>
@@ -1751,9 +2072,9 @@ const MainAppPage = React.memo(({
             <div className="flex flex-col md:flex-row items-center justify-between w-full gap-12">
               <div className="flex flex-col items-center md:items-start gap-8 flex-1">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-black text-stone-500 uppercase tracking-[0.4em]">{t('heatIndexLabel')}</span>
+                  <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">{t('heatIndexLabel')}</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-8xl md:text-9xl font-black text-[#fff2d4] tracking-tighter leading-none">
+                    <span className="text-8xl md:text-9xl font-black text-white tracking-tighter leading-none">
                       {Math.floor(formatTemp(weather.current.heatIndex, tempUnit))}°
                     </span>
                   </div>
@@ -1761,13 +2082,13 @@ const MainAppPage = React.memo(({
 
                 <div className="flex gap-12">
                   <div className="space-y-1">
-                    <span className="text-[10px] font-black text-stone-500 uppercase tracking-[0.4em]">{t('temperatureLabel')}</span>
-                    <p className="text-4xl font-black text-[#fff2d4]/60 tracking-tight">
-                      {formatTemp(weather.current.temp, tempUnit).toFixed(1)}<span className="text-xl text-stone-600">{tempUnitStr}</span>
+                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">{t('temperatureLabel')}</span>
+                    <p className="text-4xl font-black text-white/60 tracking-tight">
+                      {formatTemp(weather.current.temp, tempUnit).toFixed(1)}<span className="text-xl text-white/30">{tempUnitStr}</span>
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] font-black text-stone-500 uppercase tracking-[0.4em]">{t('statusLabel' as any)}</span>
+                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">{t('statusLabel' as any)}</span>
                     <p className="text-xl font-black uppercase tracking-widest" style={{ color: currentLevel?.color }}>
                       {t(`status${currentLevel?.label}` as any) || currentLevel?.label}
                     </p>
@@ -1786,47 +2107,105 @@ const MainAppPage = React.memo(({
             </div>
           </section>
 
-          {/* AI Tactical Card */}
-          <section className="lg:col-span-12 xl:col-span-4 flex flex-col gap-8">
-            <div className="bg-[#0c0a0a]/75 backdrop-blur-md rounded-[3rem] border border-[#fff2d4]/5 p-6 md:p-8 flex flex-col gap-8 flex-grow">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20">
-                  <CpuIcon className={`w-5 h-5 text-orange-500 ${aiLoading ? 'animate-pulse' : ''}`} />
+           <section className="lg:col-span-12 xl:col-span-4 flex flex-col gap-8">
+            <div className="bg-primary-dark/75 backdrop-blur-xl rounded-[3rem] border border-primary-light/5 p-6 md:p-8 flex flex-col gap-8 flex-grow shadow-2xl relative overflow-hidden group">
+              {/* Tactical Grid Backdrop */}
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                   style={{ backgroundImage: `radial-gradient(var(--color-primary-light) 1px, transparent 1px)`, backgroundSize: '24px 24px' }} />
+              
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary-accent/5 blur-[80px] -mr-32 -mt-32 rounded-full" />
+              
+              {/* AI Hub Header */}
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary-accent/20 blur-xl rounded-full" />
+                    <div className="relative p-3 rounded-2xl bg-primary-accent/10 border border-primary-accent/20">
+                      <SparklesIcon className={`w-5 h-5 text-primary-accent ${aiLoading ? 'animate-spin-slow' : ''}`} />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-primary-light leading-tight">
+                      {language === 'ur' ? 'ٹیکٹیکل انٹیلی جنس مرکز' : 'Tactical Intelligence Hub'}
+                    </h3>
+                  </div>
                 </div>
-                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#fff2d4]">{t('atmosphericIntelligence')}</h3>
+                
+                {/* Tech Accents */}
+                <div className="hidden sm:flex gap-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="w-[1px] h-3 bg-primary-light/10 h-bar" style={{ animationDelay: `${i * 0.1}s` }} />
+                  ))}
+                </div>
               </div>
 
-              <div className="flex-grow flex flex-col justify-center">
+              {/* Summary Section */}
+              <div className="relative">
+                <div className="absolute -left-8 top-0 bottom-0 w-[2px] bg-gradient-to-b from-orange-600/50 via-orange-600/10 to-transparent" />
                 {aiLoading ? (
                   <div className="space-y-4">
-                    <div className="h-2 bg-white/5 rounded-full w-full animate-pulse" />
-                    <div className="h-2 bg-white/5 rounded-full w-5/6 animate-pulse" />
-                    <div className="h-2 bg-white/5 rounded-full w-4/6 animate-pulse" />
+                    <div className="h-4 bg-white/5 rounded w-full animate-pulse" />
+                    <div className="h-4 bg-white/5 rounded w-5/6 animate-pulse" />
+                    <div className="h-4 bg-white/5 rounded w-4/6 animate-pulse" />
                   </div>
                 ) : (
-                  <p className="text-[15px] text-stone-300 font-medium leading-relaxed italic border-l-2 border-orange-500/50 pl-6 py-2">
-                    "{aiInsights?.summary || "Analyzing current heat dynamics..."}"
-                  </p>
+                  <div className="text-[16px] text-primary-light/80 font-medium leading-relaxed italic">
+                    <div className="text-[9px] font-black text-primary-accent uppercase tracking-widest mb-3 flex items-center gap-2">
+                       <span className="w-4 h-[1px] bg-primary-accent/30" />
+                       Situation Briefing
+                    </div>
+                    <Markdown>{aiInsights?.summary || "Analyzing current operational environment..."}</Markdown>
+                  </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              {/* Data Windows */}
+              <div className="grid grid-cols-1 gap-6">
                 {weather.windows?.optimal && (
-                  <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/60 mb-2 block">{t('optimalWindow')}</span>
-                    <span className="text-lg font-black text-emerald-500">{weather.windows.optimal}</span>
-                  </div>
-                )}
-                {weather.windows?.hazard && (
-                  <div className="flex flex-col gap-4">
-                    {aiInsights?.suggestions?.map((s: string, i: number) => (
-                      <div key={i} className="flex gap-4 items-start group/item">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#dc5e1e] mt-1.5 flex-shrink-0 group-hover/item:scale-150 transition-transform" />
-                        <p className="text-[13px] text-[#f9e8c4]/70 leading-relaxed font-medium group-hover/item:text-[#f9e8c4] transition-colors">{s}</p>
+                  <div className="relative group/win">
+                    <div className="absolute inset-0 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 transition-all group-hover/win:bg-emerald-500/10 group-hover/win:border-emerald-500/30" />
+                    <div className="relative p-5 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500/60 mb-1 block">{t('optimalWindow')}</span>
+                        <span className="text-xl font-black text-emerald-500 tracking-tighter">{weather.windows.optimal}</span>
                       </div>
-                    ))}
+                      <div className="w-12 h-12 rounded-full border border-emerald-500/20 flex items-center justify-center">
+                         <div className="w-6 h-6 rounded-full border-2 border-emerald-500/40 border-t-emerald-500 animate-spin-slow" />
+                      </div>
+                    </div>
                   </div>
                 )}
+                
+                <div className="flex flex-col gap-2">
+                  <div className="text-[9px] font-black text-primary-light/30 uppercase tracking-[0.3em] mb-1 flex items-center gap-2">
+                     <span className="w-4 h-[1px] bg-primary-light/10" />
+                     Tactical Recommendations
+                  </div>
+                  {(aiInsights?.suggestions || ["Initial telemetry received.", "Awaiting deep-field analysis."]).slice(0, 3).map((s: string, i: number) => (
+                    <motion.div 
+                      key={i} 
+                      whileHover={{ x: 5 }}
+                      className="flex gap-4 items-start group/item relative p-2 rounded-xl hover:bg-white/[0.02] border border-transparent hover:border-white/5 transition-all"
+                    >
+                      <div className="mt-1.5 flex flex-col items-center gap-1">
+                         <div className="w-1.5 h-1.5 rounded-full bg-primary-accent shadow-[0_0_8px_rgba(219,99,33,0.6)]" />
+                         <div className="w-[1px] h-3 bg-primary-accent/20 group-last:hidden" />
+                      </div>
+                      <p className="text-[15px] text-primary-light/80 leading-relaxed font-semibold transition-colors">{s}</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02, backgroundColor: '#ff7722', boxShadow: '0 0 40px rgba(219,99,33,0.5)' }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onOpenAssistant}
+                  className="mt-4 w-full h-[56px] rounded-full bg-primary-accent text-primary-dark flex items-center justify-center gap-3 group/btn transition-all duration-300 shadow-[0_0_20px_rgba(219,99,33,0.3)] border-none relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <SparklesIcon className="w-5 h-5 text-primary-dark group-hover:rotate-12 transition-transform" />
+                  <span className="text-[12px] font-black uppercase tracking-[0.3em]">{t('requestIntelBriefing')}</span>
+                </motion.button>
               </div>
             </div>
           </section>
@@ -2030,7 +2409,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-[#0c0a0a]/90 backdrop-blur-xl" 
+        className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
       />
       
       {/* Hidden Card for export */}
@@ -2042,7 +2421,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
         initial={{ scale: 0.9, y: 20, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        className="relative w-full max-w-lg bg-[#0c0a0a] border border-[#fff2d4]/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-black border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
         style={{ borderColor: `${dangerLevel.color}33` }}
       >
         <div className="absolute top-0 right-0 w-48 h-48 blur-[100px] rounded-full -mr-24 -mt-24 opacity-20 transition-colors duration-700" 
@@ -2050,27 +2429,27 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
         
         <div className="flex justify-between items-center mb-8 relative z-10">
           <div className="flex items-center gap-4">
-             <div className="p-3.5 rounded-2xl bg-[#fff2d4]/5 border border-[#fff2d4]/10 text-orange-500 shadow-inner">
+             <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-primary-accent shadow-inner">
                <ShareIcon className="w-6 h-6" aria-hidden="true" />
              </div>
              <div>
-               <h3 id={modalId} className="text-xl font-black text-[#fff2d4] uppercase tracking-tighter">Broadcast Insights</h3>
-               <p className="text-[10px] text-stone-500 font-black uppercase tracking-[0.3em]">{weather.city} • Telemetry v4.2</p>
+               <h3 id={modalId} className="text-xl font-black text-white uppercase tracking-tighter">Broadcast Insights</h3>
+               <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.3em]">{weather.city} • Telemetry v4.2</p>
              </div>
           </div>
           {copied && (
             <motion.div 
               initial={{ opacity: 0, x: 20 }} 
               animate={{ opacity: 1, x: 0 }} 
-              className="bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full ml-auto mr-4"
+              className="bg-primary-accent/10 border border-primary-accent/20 px-3 py-1 rounded-full ml-auto mr-4"
             >
-              <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">Link Copied</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-primary-accent">Link Copied</span>
             </motion.div>
           )}
           <button 
             onClick={onClose}
             aria-label="Close share modal"
-            className="p-3 rounded-full hover:bg-[#fff2d4]/10 text-stone-500 hover:text-[#fff2d4] transition-all bg-[#fff2d4]/5 border border-[#fff2d4]/5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="p-3 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5 focus:outline-none focus:ring-2 focus:ring-primary-accent"
           >
             <CloseIcon className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -2082,14 +2461,14 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
             whileTap={{ scale: 0.99 }}
             onClick={handleShare}
             disabled={isGenerating}
-            className="md:col-span-4 flex flex-row items-center justify-center gap-5 p-7 rounded-[2.5rem] transition-all border border-orange-500/50 bg-orange-600 text-[#fff2d4] shadow-[0_20px_60px_-12px_rgba(234,88,12,0.6)] mb-4 overflow-hidden relative group"
+            className="md:col-span-4 flex flex-row items-center justify-center gap-5 p-7 rounded-[2.5rem] transition-all border border-primary-accent/50 bg-primary-accent text-black shadow-[0_20px_60px_-12px_rgba(234,88,12,0.6)] mb-4 overflow-hidden relative group"
           >
             {isGenerating ? (
-              <div className="w-6 h-6 border-2 border-[#fff2d4]/30 border-t-white rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <div className="relative">
                 <ShareIcon className="w-7 h-7 group-hover:scale-110 transition-transform" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#fff2d4] rounded-full border-2 border-orange-600 animate-pulse" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-orange-600 animate-pulse" />
               </div>
             )}
             <div className="flex flex-col items-start translate-y-0.5">
@@ -2100,7 +2479,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
                 {isGenerating ? "Synthesizing Report..." : "Image + Data • Primary Share"}
               </span>
             </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#fff2d4]/20 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000" />
           </motion.button>
 
           <ShareOption 
@@ -2128,18 +2507,18 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
             icon={<DownloadIcon className="w-5 h-5" />} 
             label="Save PNG" 
             onClick={handleDownload}
-            color="bg-[#fff2d4]/10 text-[#fff2d4]"
+            color="bg-white/10 text-white"
             borderColor="rgba(255,242,212,0.2)"
           />
         </div>
 
         <div className="flex items-center gap-4 mb-8 px-4 opacity-50">
-          <div className="h-[1px] flex-grow bg-[#fff2d4]/10" />
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-stone-500 whitespace-nowrap">Encryption Active • AIS-RSA-2048</p>
-          <div className="h-[1px] flex-grow bg-[#fff2d4]/10" />
+          <div className="h-[1px] flex-grow bg-white/10" />
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 whitespace-nowrap">Encryption Active • AIS-RSA-2048</p>
+          <div className="h-[1px] flex-grow bg-white/10" />
         </div>
 
-        <div className="p-8 bg-[#0c0a0a] border border-[#fff2d4]/5 rounded-[3rem] relative overflow-hidden group/payload">
+        <div className="p-8 bg-black border border-white/5 rounded-[3rem] relative overflow-hidden group/payload">
           <div className="absolute top-0 left-0 w-2 h-full transition-colors duration-1000" 
                style={{ backgroundColor: dangerLevel.color, boxShadow: `0 0 30px ${dangerLevel.color}44` }} />
           
@@ -2147,24 +2526,24 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
             <div className="flex items-center gap-3">
                <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_15px_currentColor] animate-pulse" 
                     style={{ backgroundColor: dangerLevel.color, color: dangerLevel.color }} />
-               <span className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-400">Secure Payload Summary</span>
+               <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Secure Payload Summary</span>
             </div>
             <div className="flex gap-1">
                {Array.from({ length: 3 }).map((_, i) => (
-                 <div key={i} className="w-1 h-3 bg-[#fff2d4]/5 rounded-full" />
+                 <div key={i} className="w-1 h-3 bg-white/5 rounded-full" />
                ))}
             </div>
           </div>
           
-          <p className="text-xs text-stone-400 leading-relaxed font-bold tracking-tight italic line-clamp-2 group-hover/payload:text-[#fff2d4] transition-colors duration-500">
+          <p className="text-xs text-white/40 leading-relaxed font-bold tracking-tight italic line-clamp-2 group-hover/payload:text-white transition-colors duration-500">
             "{shareData.text.split('\n')[0]}... [TELEMETRY_ENCRYPTED]... Link: {shareData.url.substring(0, 20)}..."
           </p>
           
           <div className="mt-6 flex justify-end items-center gap-4">
-            <span className="text-[8px] font-black uppercase tracking-widest text-stone-500">Checksum: {Math.random().toString(16).substring(2, 8).toUpperCase()}</span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Checksum: {Math.random().toString(16).substring(2, 8).toUpperCase()}</span>
             <button 
               onClick={handleCopy}
-              className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all px-5 py-2.5 rounded-xl border-2 ${copied ? 'bg-orange-500 border-orange-500 text-[#fff2d4]' : 'bg-[#fff2d4]/5 border-[#fff2d4]/10 text-stone-500 hover:text-[#fff2d4] hover:border-[#fff2d4]/20 hover:bg-[#fff2d4]/[0.08] shadow-lg'}`}
+              className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all px-5 py-2.5 rounded-xl border-2 ${copied ? 'bg-primary-accent border-primary-accent text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/[0.08] shadow-lg'}`}
             >
               {copied ? <CheckIcon className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
               {copied ? 'Copied' : 'Copy Direct Link'}
@@ -2210,21 +2589,21 @@ const ThermalReportCard = React.forwardRef<HTMLDivElement, { weather: WeatherDat
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center gap-4">
-            <SunIcon className="w-10 h-10 text-orange-500" strokeWidth={3} />
+            <SunIcon className="w-10 h-10 text-primary-accent" strokeWidth={3} />
             <div className="flex flex-col">
-              <span className="text-xl font-black uppercase tracking-[0.5em] text-[#fff2d4]">AETRAXA</span>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500/60">Thermal Monitoring System</span>
+              <span className="text-xl font-black uppercase tracking-[0.5em] text-white">AETRAXA</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-accent/60">Thermal Monitoring System</span>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-500">Telemetry ID: {Math.random().toString(36).substring(7).toUpperCase()}</p>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-500">{new Date().toLocaleDateString()} • {weather.lastUpdated}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">Telemetry ID: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{new Date().toLocaleDateString()} • {weather.lastUpdated}</p>
           </div>
         </div>
 
         <div className="space-y-1 mb-6">
-          <p className="text-xs font-black uppercase tracking-[0.4em] text-orange-500/80">Vector Location</p>
-          <h2 className={`font-black tracking-tighter text-[#fff2d4] uppercase leading-none break-words ${
+          <p className="text-xs font-black uppercase tracking-[0.4em] text-primary-accent/80">Vector Location</p>
+          <h2 className={`font-black tracking-tighter text-white uppercase leading-none break-words ${
             weather.city.length > 20 ? 'text-3xl' : 
             weather.city.length > 15 ? 'text-4xl' : 
             weather.city.length > 10 ? 'text-5xl' : 
@@ -2234,16 +2613,16 @@ const ThermalReportCard = React.forwardRef<HTMLDivElement, { weather: WeatherDat
 
         <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-500">Calibrated Heat Index</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">Calibrated Heat Index</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-8xl font-black tracking-tighter text-[#fff2d4]">{Math.floor(formatTemp(weather.current.heatIndex, tempUnit))}</span>
-              <span className="text-2xl font-black text-orange-600">HI</span>
+              <span className="text-8xl font-black tracking-tighter text-white">{Math.floor(formatTemp(weather.current.heatIndex, tempUnit))}</span>
+              <span className="text-2xl font-black text-primary-accent">HI</span>
             </div>
           </div>
           <div className="flex flex-col justify-end">
-            <div className="p-6 rounded-[2rem] border border-[#fff2d4]/5 bg-[#fff2d4]/[0.02] backdrop-blur-md relative overflow-hidden">
+            <div className="p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] backdrop-blur-md relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: dangerLevel.color }} />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-500 mb-2">Danger Rating</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mb-2">Danger Rating</p>
               <p className="text-3xl font-black uppercase tracking-tight leading-none" style={{ color: dangerLevel.color }}>
                 {dangerLevel.label}
               </p>
@@ -2252,55 +2631,55 @@ const ThermalReportCard = React.forwardRef<HTMLDivElement, { weather: WeatherDat
         </div>
 
         <div className="grid grid-cols-4 gap-3 mb-8">
-          <div className="p-3 rounded-2xl bg-[#fff2d4]/[0.02] border border-[#fff2d4]/5">
-            <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 mb-1">Ambient</p>
-            <p className="text-base font-black text-[#fff2d4]">{formatTemp(weather.current.temp, tempUnit).toFixed(1)}{tempUnitStr}</p>
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Ambient</p>
+            <p className="text-base font-black text-white">{formatTemp(weather.current.temp, tempUnit).toFixed(1)}{tempUnitStr}</p>
           </div>
-          <div className="p-3 rounded-2xl bg-[#fff2d4]/[0.02] border border-[#fff2d4]/5">
-            <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 mb-1">Humidity</p>
-            <p className="text-base font-black text-[#fff2d4]">{weather.current.humidity}%</p>
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Humidity</p>
+            <p className="text-base font-black text-white">{weather.current.humidity}%</p>
           </div>
-          <div className="p-3 rounded-2xl bg-[#fff2d4]/[0.02] border border-[#fff2d4]/5">
-            <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 mb-1">Wind</p>
-            <p className="text-base font-black text-[#fff2d4]">{weather.current.windSpeed} km/h</p>
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">Wind</p>
+            <p className="text-base font-black text-white">{weather.current.windSpeed} km/h</p>
           </div>
-          <div className="p-3 rounded-2xl bg-[#fff2d4]/[0.02] border border-[#fff2d4]/5">
-            <p className="text-[9px] font-black uppercase tracking-widest text-stone-500 mb-1">UV Index</p>
-            <p className="text-base font-black text-[#fff2d4]">{weather.current.uvIndex}</p>
+          <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">UV Index</p>
+            <p className="text-base font-black text-white">{weather.current.uvIndex}</p>
           </div>
         </div>
 
-        <div className="p-6 rounded-[2rem] bg-orange-600/5 border border-orange-500/10 mb-6">
+        <div className="p-6 rounded-[2rem] bg-primary-accent/5 border border-primary-accent/10 mb-6">
            <div className="flex items-center gap-3 mb-2">
-              <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">Safety Protocol Advice</p>
+              <div className="w-2 h-2 rounded-full bg-primary-accent animate-pulse" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-accent">Safety Protocol Advice</p>
            </div>
-           <p className="text-base font-bold text-stone-300 leading-tight">
+           <p className="text-base font-bold text-white/60 leading-tight">
              {getSafetyAdvice(dangerLevel.label)}
            </p>
         </div>
       </div>
 
-      <div className="relative z-10 border-t border-[#fff2d4]/10 pt-6 flex justify-between items-end">
+      <div className="relative z-10 border-t border-white/10 pt-6 flex justify-between items-end">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-             <div className="w-3 h-3 rounded-full bg-orange-600 shadow-[0_0_15px_rgba(234,88,12,0.8)]" />
-             <p className="text-xs font-black uppercase tracking-[0.3em] text-stone-300">Live Satellite Uplink</p>
+             <div className="w-3 h-3 rounded-full bg-primary-accent shadow-[0_0_15px_rgba(219,99,33,0.8)]" />
+             <p className="text-xs font-black uppercase tracking-[0.3em] text-white/60">Live Satellite Uplink</p>
           </div>
           <div className="flex flex-col">
-            <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest leading-relaxed max-w-xs">
+            <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest leading-relaxed max-w-xs">
               Official AETRAXA Precise Thermal Data.
             </p>
-            <p className="text-[9px] text-stone-400 font-black uppercase tracking-[0.1em]">Source: AIS-Sat-X42 • Precision: +/- 0.1C</p>
+            <p className="text-[9px] text-white/30 font-black uppercase tracking-[0.1em]">Source: AIS-Sat-X42 • Precision: +/- 0.1C</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-3">
-          <div className="w-24 h-24 p-2 bg-[#fff2d4] rounded-xl shadow-2xl">
+          <div className="w-24 h-24 p-2 bg-white rounded-xl shadow-2xl">
              <div className="w-full h-full bg-[#050505] flex items-center justify-center p-1 rounded-lg">
-                <SunIcon className="w-12 h-12 text-orange-500" />
+                <SunIcon className="w-12 h-12 text-primary-accent" />
              </div>
           </div>
-          <p className="text-[9px] font-black tracking-[0.4em] text-[#fff2d4] uppercase bg-[#0c0a0a] px-3 py-1.5 rounded-full border border-[#fff2d4]/10">AETRAXA.APP</p>
+          <p className="text-[9px] font-black tracking-[0.4em] text-white uppercase bg-black px-3 py-1.5 rounded-full border border-white/10">AETRAXA.APP</p>
         </div>
       </div>
 
@@ -2319,20 +2698,20 @@ function ShareOption({ icon, label, onClick, color, borderColor }: { icon: React
       whileHover={{ 
         scale: 1.05, 
         y: -4,
-        borderColor: borderColor || 'rgba(234, 88, 12, 0.4)',
+        borderColor: borderColor || 'rgba(219, 99, 33, 0.4)',
         backgroundColor: 'rgba(255, 255, 255, 0.03)'
       }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-[2rem] transition-all border border-[#fff2d4]/5 bg-[#fff2d4]/[0.01] hover:shadow-[0_15px_40px_-10px_rgba(12,10,10,0.5)] group overflow-hidden"
+      className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-[2rem] transition-all border border-white/5 bg-white/[0.01] hover:shadow-[0_15px_40px_-10px_rgba(12,10,10,0.5)] group overflow-hidden"
     >
       <div className={`p-4 rounded-2xl ${color} shadow-lg transition-all group-hover:scale-110 duration-300 flex items-center justify-center`}>
         {icon}
       </div>
-      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-500 group-hover:text-[#fff2d4] transition-colors">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-white transition-colors">{label}</span>
       
       {/* Subtle hover background effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#fff2d4]/0 to-[#fff2d4]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
     </motion.button>
   );
 }
