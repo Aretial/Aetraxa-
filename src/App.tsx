@@ -48,6 +48,15 @@ import Markdown from 'react-markdown';
 
 import { AboutPage } from './components/AboutPage';
 
+export interface UserProfile {
+  occupation: string;
+  outdoor_hours: number;
+  health_conditions: string[];
+  monitoring_others: string[];
+  alert_style: string;
+  preferred_language: 'en' | 'ur';
+}
+
 enum Page {
   Landing = 'landing',
   Main = 'main',
@@ -114,7 +123,7 @@ const formatTemp = (celsius: number, unit: 'celsius' | 'fahrenheit'): number => 
 
 // --- Components ---
 
-const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionChange: (section: string) => void }) => {
+const Navbar = ({ onStart, onSectionChange, onOpenSettings }: { onStart: () => void, onSectionChange: (section: string) => void, onOpenSettings: () => void }) => {
   const { language, setLanguage, t } = useLanguage();
   const { tempUnit, setTempUnit } = useTempUnit();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -191,6 +200,16 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
             <GlobeIcon className="w-3.5 h-3.5 text-primary-accent" strokeWidth={2.5} />
             {language === 'en' ? 'EN' : 'UR'}
           </motion.button>
+
+          <motion.button 
+            onClick={onOpenSettings}
+            whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,242,212,0.1)', borderColor: 'rgba(219,99,33,0.3)' }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center p-2.5 text-white transition-all border border-white/10 rounded-full bg-black/40 backdrop-blur-md hover:border-primary-accent/30 focus:outline-none"
+            aria-label={t('tacticalSettings')}
+          >
+            <SettingsIcon className="w-4 h-4 text-primary-accent" />
+          </motion.button>
         </div>
           
         <motion.button
@@ -244,6 +263,15 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
             <GlobeIcon className="w-3 h-3 text-primary-accent" strokeWidth={2.5} />
             {language === 'en' ? 'EN' : 'UR'}
           </motion.button>
+
+          <motion.button 
+            onClick={onOpenSettings}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center p-1.5 text-white transition-all border border-white/10 rounded-full bg-black/40 backdrop-blur-md focus:outline-none"
+            aria-label={t('tacticalSettings')}
+          >
+            <SettingsIcon className="w-3.5 h-3.5 text-primary-accent" />
+          </motion.button>
         </div>
 
         <button 
@@ -274,6 +302,13 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
               className="w-full text-left px-4 py-3 text-xs font-bold tracking-widest uppercase text-white/60 hover:text-white hover:bg-white/5 rounded-2xl transition-colors"
             >
               {t('about')}
+            </button>
+            <button 
+              onClick={() => { setIsMenuOpen(false); onOpenSettings(); }}
+              className="w-full text-left px-4 py-3 text-xs font-bold tracking-widest uppercase text-white/60 hover:text-white hover:bg-white/5 rounded-2xl transition-colors flex items-center gap-2"
+            >
+              <SettingsIcon className="w-3.5 h-3.5 text-primary-accent" />
+              {t('tacticalSettings')}
             </button>
             <div className="w-full h-[1px] bg-white/10 my-2" />
             <button 
@@ -483,6 +518,35 @@ export default function App() {
     localStorage.setItem('aetraxaTempUnit', tempUnit);
   }, [tempUnit]);
 
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('aetraxaUserProfile');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          occupation: parsed.occupation || '',
+          outdoor_hours: parsed.outdoor_hours !== undefined ? parsed.outdoor_hours : 0,
+          health_conditions: parsed.health_conditions || [],
+          monitoring_others: parsed.monitoring_others || [],
+          alert_style: parsed.alert_style || 'Detailed',
+          preferred_language: parsed.preferred_language || 'en'
+        };
+      } catch (e) {
+        console.error("Failed to parse user profile from localStorage", e);
+      }
+    }
+    return {
+      occupation: '',
+      outdoor_hours: 0,
+      health_conditions: [],
+      monitoring_others: [],
+      alert_style: 'Detailed',
+      preferred_language: 'en'
+    };
+  });
+
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
   const [currentPage, setCurrentPage] = useState<Page>(Page.Landing);
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
@@ -503,7 +567,21 @@ export default function App() {
   const [isLocating, setIsLocating] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'forward' | 'backward' | null>(null);
 
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+
+  useEffect(() => {
+    if (userProfile.preferred_language !== language) {
+      setUserProfile(prev => ({ ...prev, preferred_language: language }));
+    }
+  }, [language]);
+
+  const handleSaveProfile = useCallback((profile: UserProfile) => {
+    setUserProfile(profile);
+    localStorage.setItem('aetraxaUserProfile', JSON.stringify(profile));
+    if (profile.preferred_language !== language) {
+      setLanguage(profile.preferred_language);
+    }
+  }, [language, setLanguage]);
 
   const getAIInsights = useCallback(async (data: WeatherData) => {
     const now = Date.now();
@@ -518,7 +596,7 @@ export default function App() {
       const response = await fetch('/api/ai-insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weatherData: data, language })
+        body: JSON.stringify({ weatherData: data, userProfile, language })
       });
       
       if (response.ok) {
@@ -553,7 +631,7 @@ export default function App() {
     } finally {
       setAiLoading(false);
     }
-  }, [language]);
+  }, [language, userProfile]);
 
   const handleSendChatMessage = useCallback(async (message: string) => {
     if (!message.trim() || !weather) return;
@@ -576,6 +654,7 @@ export default function App() {
         body: JSON.stringify({ 
           messages: [...chatMessages, newUserMessage],
           weatherData: weather,
+          userProfile,
           language 
         })
       });
@@ -592,7 +671,7 @@ export default function App() {
     } finally {
       setIsChatLoading(false);
     }
-  }, [chatMessages, weather, language]);
+  }, [chatMessages, weather, language, userProfile]);
 
   const processLocation = useCallback(async (latitude: number, longitude: number, cityName?: string) => {
     try {
@@ -872,6 +951,7 @@ export default function App() {
               setTimeout(() => setCurrentPage(Page.About), 300);
             }
           }}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
         />
       
         <AnimatePresence>
@@ -879,6 +959,16 @@ export default function App() {
             <ShareModal 
               weather={weather} 
               onClose={() => setIsShareModalOpen(false)} 
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isSettingsModalOpen && (
+            <TacticalSettingsModal 
+              profile={userProfile} 
+              onClose={() => setIsSettingsModalOpen(false)} 
+              onSave={handleSaveProfile} 
             />
           )}
         </AnimatePresence>
@@ -2729,5 +2819,302 @@ function ShareOption({ icon, label, onClick, color, borderColor }: { icon: React
       {/* Subtle hover background effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
     </motion.button>
+  );
+}
+
+function TacticalSettingsModal({ profile, onClose, onSave }: { profile: UserProfile, onClose: () => void, onSave: (profile: UserProfile) => void }) {
+  const { language, t } = useLanguage();
+  const modalId = React.useId();
+  
+  const [occupation, setOccupation] = useState(profile.occupation);
+  const [outdoorHours, setOutdoorHours] = useState(profile.outdoor_hours);
+  const [healthConditions, setHealthConditions] = useState<string[]>(profile.health_conditions.length > 0 ? profile.health_conditions : ['None']);
+  const [monitoringOthers, setMonitoringOthers] = useState<string[]>(profile.monitoring_others.length > 0 ? profile.monitoring_others : ['None']);
+  const [alertStyle, setAlertStyle] = useState(profile.alert_style);
+  const [preferredLanguage, setPreferredLanguage] = useState(profile.preferred_language);
+  const [showToast, setShowToast] = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  const handleToggleHealth = (conditionKey: string) => {
+    if (conditionKey === 'None') {
+      setHealthConditions(['None']);
+    } else {
+      setHealthConditions(prev => {
+        const filtered = prev.filter(c => c !== 'None');
+        if (filtered.includes(conditionKey)) {
+          const next = filtered.filter(c => c !== conditionKey);
+          return next.length === 0 ? ['None'] : next;
+        } else {
+          return [...filtered, conditionKey];
+        }
+      });
+    }
+  };
+
+  const handleToggleDep = (depKey: string) => {
+    if (depKey === 'None') {
+      setMonitoringOthers(['None']);
+    } else {
+      setMonitoringOthers(prev => {
+        const filtered = prev.filter(c => c !== 'None');
+        if (filtered.includes(depKey)) {
+          const next = filtered.filter(c => c !== depKey);
+          return next.length === 0 ? ['None'] : next;
+        } else {
+          return [...filtered, depKey];
+        }
+      });
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      occupation,
+      outdoor_hours: Number(outdoorHours),
+      health_conditions: healthConditions,
+      monitoring_others: monitoringOthers,
+      alert_style: alertStyle,
+      preferred_language: preferredLanguage
+    });
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+      onClose();
+    }, 1500);
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={modalId}
+    >
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
+      />
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[2000] bg-emerald-500 text-black px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3"
+          >
+            <CheckIcon className="w-4 h-4 stroke-[3]" />
+            {t('settingsSaved' as any)}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div 
+        initial={{ scale: 0.9, y: 20, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.9, y: 20, opacity: 0 }}
+        className="relative w-full max-w-2xl bg-[#090909] border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
+        style={{ borderColor: 'rgba(219,99,33,0.2)' }}
+      >
+        <div className="absolute top-0 right-0 w-48 h-48 blur-[100px] rounded-full -mr-24 -mt-24 opacity-10 bg-primary-accent" aria-hidden="true" />
+        
+        <div className="flex justify-between items-center mb-8 relative z-10">
+          <div className="flex items-center gap-4">
+             <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-primary-accent shadow-inner">
+               <SettingsIcon className="w-6 h-6 animate-spin-slow" aria-hidden="true" />
+             </div>
+             <div>
+               <h3 id={modalId} className="text-xl font-black text-white uppercase tracking-tighter">{t('tacticalSettings' as any)}</h3>
+               <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.3em]">{t('personalSafetyProfile' as any)}</p>
+             </div>
+          </div>
+          <button 
+            onClick={onClose}
+            aria-label="Close settings modal"
+            className="p-3 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5 focus:outline-none focus:ring-2 focus:ring-primary-accent"
+          >
+            <CloseIcon className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6 relative z-10 text-left">
+          {/* Occupation */}
+          <div>
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-2 block">{t('occupationLabel' as any)}</label>
+            <input 
+              type="text"
+              value={occupation}
+              onChange={(e) => setOccupation(e.target.value)}
+              placeholder={t('occupationPlaceholder' as any)}
+              className="w-full bg-black border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:outline-none focus:border-primary-accent/40 font-semibold placeholder:text-white/20 transition-all"
+            />
+          </div>
+
+          {/* Outdoor Exposure Hours */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">{t('outdoorHoursLabel' as any)}</label>
+              <span className="text-xs font-black text-primary-accent bg-primary-accent/10 px-3 py-1 rounded-full">{outdoorHours} {language === 'ur' ? 'گھنٹے' : 'h'}</span>
+            </div>
+            <input 
+              type="range"
+              min="0"
+              max="24"
+              value={outdoorHours}
+              onChange={(e) => setOutdoorHours(Number(e.target.value))}
+              className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary-accent"
+            />
+            <div className="flex justify-between text-[8px] font-black text-white/20 uppercase tracking-widest mt-1">
+              <span>0h</span>
+              <span>12h</span>
+              <span>24h</span>
+            </div>
+          </div>
+
+          {/* Medical Conditions */}
+          <div>
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-3 block">{t('healthConditionsLabel' as any)}</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { key: 'None', labelKey: 'healthNone' },
+                { key: 'Cardiovascular', labelKey: 'healthHeartDisease' },
+                { key: 'Respiratory', labelKey: 'healthRespiratory' },
+                { key: 'Hypertension', labelKey: 'healthHypertension' },
+                { key: 'Diabetes', labelKey: 'healthDiabetes' },
+                { key: 'Pregnancy', labelKey: 'healthPregnancy' },
+              ].map(opt => {
+                const isSelected = healthConditions.includes(opt.key);
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => handleToggleHealth(opt.key)}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border transition-all text-left focus:outline-none ${isSelected ? 'bg-primary-accent/10 border-primary-accent/40 text-primary-accent shadow-[0_0_15px_rgba(219,99,33,0.05)]' : 'bg-white/[0.01] border-white/5 text-white/40 hover:border-white/10 hover:text-white/60'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${isSelected ? 'border-primary-accent bg-primary-accent text-black' : 'border-white/20'}`}>
+                      {isSelected && <CheckIcon className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <span className="text-xs font-bold leading-tight">{t(opt.labelKey as any)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dependents monitoring */}
+          <div>
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-3 block">{t('monitoringOthersLabel' as any)}</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { key: 'None', labelKey: 'depNone' },
+                { key: 'Elderly', labelKey: 'depElderly' },
+                { key: 'Infants', labelKey: 'depInfants' },
+                { key: 'OutdoorWorkers', labelKey: 'depOutdoor' },
+                { key: 'Pets', labelKey: 'depPets' },
+              ].map(opt => {
+                const isSelected = monitoringOthers.includes(opt.key);
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => handleToggleDep(opt.key)}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border transition-all text-left focus:outline-none ${isSelected ? 'bg-primary-accent/10 border-primary-accent/40 text-primary-accent shadow-[0_0_15px_rgba(219,99,33,0.05)]' : 'bg-white/[0.01] border-white/5 text-white/40 hover:border-white/10 hover:text-white/60'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${isSelected ? 'border-primary-accent bg-primary-accent text-black' : 'border-white/20'}`}>
+                      {isSelected && <CheckIcon className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <span className="text-xs font-bold leading-tight">{t(opt.labelKey as any)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Alert Style */}
+          <div>
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-3 block">{t('alertStyleLabel' as any)}</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { key: 'Detailed', labelKey: 'alertStyleDetailed' },
+                { key: 'Compact', labelKey: 'alertStyleCompact' },
+                { key: 'Urgent', labelKey: 'alertStyleUrgent' },
+              ].map(opt => {
+                const isSelected = alertStyle === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setAlertStyle(opt.key)}
+                    className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all text-center focus:outline-none ${isSelected ? 'bg-primary-accent/10 border-primary-accent/40 text-primary-accent shadow-[0_0_15px_rgba(219,99,33,0.05)]' : 'bg-white/[0.01] border-white/5 text-white/40 hover:border-white/10 hover:text-white/60'}`}
+                  >
+                    <span className="text-xs font-black uppercase tracking-wider mb-1">{opt.key}</span>
+                    <span className="text-[10px] font-bold opacity-60 leading-tight">{t(opt.labelKey as any)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Language Selection */}
+          <div>
+            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-3 block">{t('selectLanguage' as any)}</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: 'en', label: t('english' as any) },
+                { key: 'ur', label: t('urdu' as any) },
+              ].map(opt => {
+                const isSelected = preferredLanguage === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setPreferredLanguage(opt.key as 'en' | 'ur')}
+                    className={`p-4 rounded-2xl border transition-all text-center focus:outline-none ${isSelected ? 'bg-primary-accent/10 border-primary-accent/40 text-primary-accent shadow-[0_0_15px_rgba(219,99,33,0.05)] font-black' : 'bg-white/[0.01] border-white/5 text-white/40 hover:border-white/10 hover:text-white/60 font-semibold'}`}
+                  >
+                    <span className="text-xs">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-4 items-center justify-between border-t border-white/10 pt-6 mt-8">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 rounded-full border border-white/10 text-white/60 text-xs font-black uppercase tracking-wider hover:bg-white/5 hover:text-white transition-all focus:outline-none"
+            >
+              {t('close' as any)}
+            </button>
+            
+            <motion.button
+              whileHover={{ scale: 1.02, backgroundColor: '#ff7722', boxShadow: '0 0 30px rgba(219,99,33,0.4)' }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              className="px-10 py-3 bg-primary-accent text-black rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(219,99,33,0.25)] border border-white/20 focus:outline-none"
+            >
+              {t('saveSettings' as any)}
+            </motion.button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
   );
 }

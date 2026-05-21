@@ -57,9 +57,9 @@ async function startServer() {
       - Preferred language: ${userProfile.preferred_language || (language === 'ur' ? 'Urdu' : 'English')}
       
       IMPORTANT PERSONALIZATION INSTRUCTIONS:
-      1. CRITICAL: Tailor the "summary" and "suggestions" directly to their occupation and health conditions.
+      1. CRITICAL: Tailor the "summary" and "suggestions" directly to the user's occupation and health conditions. Explicitly reference these factors in each recommendation.
       2. Keep responses in the user's Preferred Language if possible, especially the "summary" and "suggestions" arrays! (e.g. if Urdu, output Urdu strings for summary and suggestions, but keep JSON keys in English).
-      3. Adapt the severity based on their profile.
+      3. Adjust severity and urgency based on profile data (e.g., higher risk for cardiovascular issues).
       `;
       }
 
