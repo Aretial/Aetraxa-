@@ -153,24 +153,32 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
 
         <div className="flex items-center gap-2">
           {/* Temp Toggle Group */}
-          <div className="relative flex items-center p-1 bg-white/5 rounded-full border border-white/10">
-            <motion.div 
-              className="absolute bg-primary-accent rounded-full z-0"
-              initial={false}
-              animate={{ left: tempUnit === 'celsius' ? '4px' : '44px', width: '40px', height: 'calc(100% - 8px)' }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            />
+          <div className="relative flex items-center p-1 bg-white/5 rounded-full border border-white/10 gap-0.5">
             <button 
               onClick={() => setTempUnit('celsius')}
-              className={`relative z-10 flex items-center justify-center text-[9px] font-black tracking-[0.15em] transition-colors rounded-full px-3 py-1.5 min-w-[40px] text-center focus:outline-none ${tempUnit === 'celsius' ? 'text-black' : 'text-white/40 hover:text-white/80'}`}
+              className={`relative flex items-center justify-center text-[10px] font-black transition-colors rounded-full w-10 h-7 text-center focus:outline-none select-none ${tempUnit === 'celsius' ? 'text-black' : 'text-white/40 hover:text-white/85'}`}
             >
-              °C
+              {tempUnit === 'celsius' && (
+                <motion.div 
+                  layoutId="activeTempDesktop"
+                  className="absolute inset-0 bg-primary-accent rounded-full z-0 shadow-sm"
+                  transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                />
+              )}
+              <span className="relative z-10 leading-none">°C</span>
             </button>
             <button 
               onClick={() => setTempUnit('fahrenheit')}
-              className={`relative z-10 flex items-center justify-center text-[9px] font-black tracking-[0.15em] transition-colors rounded-full px-3 py-1.5 min-w-[40px] text-center focus:outline-none ${tempUnit === 'fahrenheit' ? 'text-black' : 'text-white/40 hover:text-white/80'}`}
+              className={`relative flex items-center justify-center text-[10px] font-black transition-colors rounded-full w-10 h-7 text-center focus:outline-none select-none ${tempUnit === 'fahrenheit' ? 'text-black' : 'text-white/40 hover:text-white/85'}`}
             >
-              °F
+              {tempUnit === 'fahrenheit' && (
+                <motion.div 
+                  layoutId="activeTempDesktop"
+                  className="absolute inset-0 bg-primary-accent rounded-full z-0 shadow-sm"
+                  transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                />
+              )}
+              <span className="relative z-10 leading-none">°F</span>
             </button>
           </div>
 
@@ -199,24 +207,32 @@ const Navbar = ({ onStart, onSectionChange }: { onStart: () => void, onSectionCh
       <div className="flex xl:hidden items-center gap-1 sm:gap-2">
         <div className="flex items-center gap-1 sm:gap-2 border-r border-white/10 pr-2 sm:pr-3 mr-1">
           {/* Mobile Temp Toggle */}
-          <div className="relative flex items-center p-1 bg-white/5 rounded-full border border-white/10">
-            <motion.div 
-              className="absolute bg-primary-accent rounded-full z-0"
-              initial={false}
-              animate={{ left: tempUnit === 'celsius' ? '2px' : '32px', width: '30px', height: 'calc(100% - 4px)' }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            />
+          <div className="relative flex items-center p-0.5 bg-white/5 rounded-full border border-white/10 gap-0.5">
             <button 
               onClick={() => setTempUnit('celsius')}
-              className={`relative z-10 flex items-center justify-center text-[8px] font-black tracking-[0.15em] transition-colors rounded-full px-2 py-1 min-w-[30px] text-center focus:outline-none ${tempUnit === 'celsius' ? 'text-black' : 'text-white/40'}`}
+              className={`relative flex items-center justify-center text-[9px] font-black transition-colors rounded-full w-8 h-6 text-center focus:outline-none select-none ${tempUnit === 'celsius' ? 'text-black' : 'text-white/40'}`}
             >
-              °C
+              {tempUnit === 'celsius' && (
+                <motion.div 
+                  layoutId="activeTempMobile"
+                  className="absolute inset-0 bg-primary-accent rounded-full z-0"
+                  transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                />
+              )}
+              <span className="relative z-10 leading-none">°C</span>
             </button>
             <button 
               onClick={() => setTempUnit('fahrenheit')}
-              className={`relative z-10 flex items-center justify-center text-[8px] font-black tracking-[0.15em] transition-colors rounded-full px-2 py-1 min-w-[30px] text-center focus:outline-none ${tempUnit === 'fahrenheit' ? 'text-black' : 'text-white/40'}`}
+              className={`relative flex items-center justify-center text-[9px] font-black transition-colors rounded-full w-8 h-6 text-center focus:outline-none select-none ${tempUnit === 'fahrenheit' ? 'text-black' : 'text-white/40'}`}
             >
-              °F
+              {tempUnit === 'fahrenheit' && (
+                <motion.div 
+                  layoutId="activeTempMobile"
+                  className="absolute inset-0 bg-primary-accent rounded-full z-0"
+                  transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                />
+              )}
+              <span className="relative z-10 leading-none">°F</span>
             </button>
           </div>
 
