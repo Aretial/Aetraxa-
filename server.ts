@@ -47,19 +47,31 @@ async function startServer() {
       
       let profileContext = '';
       if (userProfile) {
+        const hasVulnerabilities = (userProfile.health_conditions || []).some((c: string) => c !== 'None');
+        const hasDependents = (userProfile.monitoring_others || []).some((d: string) => d !== 'None');
+        const hasOccupation = !!userProfile.occupation && userProfile.occupation.trim().toLowerCase() !== 'none' && userProfile.occupation.trim() !== '';
+
         profileContext = `
       User Profile Context:
-      - Occupation: ${userProfile.occupation || 'N/A'}
+      - Occupation: ${userProfile.occupation || 'Not declared'}
       - Time outside: ${userProfile.outdoor_hours || 0} hours/day
       - Health conditions: ${(userProfile.health_conditions || []).join(', ') || 'None'}
       - Monitoring others: ${(userProfile.monitoring_others || []).join(', ') || 'None'}
       - Alert style preference: ${userProfile.alert_style || 'Detailed'}
       - Preferred language: ${userProfile.preferred_language || (language === 'ur' ? 'Urdu' : 'English')}
       
-      IMPORTANT PERSONALIZATION INSTRUCTIONS:
-      1. CRITICAL: Tailor the "summary" and "suggestions" directly to the user's occupation and health conditions. Explicitly reference these factors in each recommendation.
+      IMPORTANT PERSONALIZATION INSTRUCTIONS (CRITICAL HIGHEST PRIORITY):
+      1. You MUST explicitly and custom-tailor the "summary" and ALL 3 items of "suggestions" directly to the user's declared profile.
+      ${hasOccupation ? `- Since their occupation is "${userProfile.occupation}", at least one suggestion and the summary MUST directly address physical workload, outdoor exposure patterns, and safety maneuvers specific to a ${userProfile.occupation}.` : ''}
+      ${hasVulnerabilities ? `- Since they have health conditions: "${(userProfile.health_conditions || []).filter((h: string) => h !== 'None').join(', ')}", at least one suggestion MUST explicitly detail the physiological risks (e.g., cardiovascular strain, airway constriction) and actionable preventions for these exact conditions under the current heat/humidity.` : ''}
+      ${hasDependents ? `- Since they monitor dependents: "${(userProfile.monitoring_others || []).filter((h: string) => h !== 'None').join(', ')}", at least one suggestion MUST provide concrete tactical instructions to safeguard these dependents (e.g., seniors, children, pets) in these current environments.` : ''}
+      - Each of the 3 suggestions MUST be prefixed by its profile-relevant label, for example:
+        "Occupation [${userProfile.occupation || 'N/A'}]: <highly tailored protocol>"
+        "Medical [${(userProfile.health_conditions || []).filter((h: string) => h !== 'None')[0] || 'N/A'}]: <highly tailored physiological protocol>"
+        "Dependent [${(userProfile.monitoring_others || []).filter((h: string) => h !== 'None')[0] || 'N/A'}]: <highly tailored dependent protection protocol>"
+      - If they have no custom configurations (occupation is empty, medical is 'None', dependents is 'None'), construct tactical recommendations based on their "${userProfile.outdoor_hours || 0} hours" of daily outdoor exposure, and add a friendly note in the "summary" encouraging them to click the gear icon to customize their tactical settings.
       2. Keep responses in the user's Preferred Language if possible, especially the "summary" and "suggestions" arrays! (e.g. if Urdu, output Urdu strings for summary and suggestions, but keep JSON keys in English).
-      3. Adjust severity and urgency based on profile data (e.g., higher risk for cardiovascular issues).
+      3. Scale severity and urgency of warnings based on their profile data (e.g. cardiovascular risk should trigger much faster, high-priority cardiac strain alerts).
       `;
       }
 
@@ -76,14 +88,14 @@ async function startServer() {
 
       MISSION PARAMETERS:
       1. CRITICAL: Avoid generic "drink water" advice. Provide DATA-DRIVEN, TACTICAL cooling protocols.
-      2. If temperature is >40°C, calculate a specific hydration target (e.g. "Drink 0.5L every 45 mins").
+      2. If temperature is >40°C, calculate a specific hydration target.
       3. If UV is >8, specify exactly when to avoid direct exposure based on solar peak.
       4. If humidity is >60% alongside high heat, warn about "wet-bulb" effect and sweat evaporation failure.
       
       OUTPUT REQUIREMENTS:
       1. qualitative assessments: concise (max 8 words) for temp, heatIndex, humidity, wind, uv.
-      2. summary: A high-alert, tactical briefing (max 30 words).
-      3. suggestions: A list of 3 high-precision tactical maneuvers (e.g., "Maneuver: Pre-chill core temp before 1100h", "Hydration: 4L target with electrolyte replenishment").
+      2. summary: A high-alert, tactical briefing (max 35 words).
+      3. suggestions: A list of exactly 3 high-precision, hyper-personalized tactical maneuvers (do NOT use generic suggestions).
       4. "peakSunHours": "HH:MM - HH:MM" window.
       5. "coolerHours": "HH:MM - HH:MM" window.
       

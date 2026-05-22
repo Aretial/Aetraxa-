@@ -33,7 +33,9 @@ import {
   X as CloseIcon,
   Download as DownloadIcon,
   Globe as GlobeIcon,
-  Activity as ActivityIcon
+  Activity as ActivityIcon,
+  Instagram as InstagramIcon,
+  MessageCircle as MessageCircleIcon
 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 
@@ -60,7 +62,8 @@ export interface UserProfile {
 enum Page {
   Landing = 'landing',
   Main = 'main',
-  About = 'about'
+  About = 'about',
+  SharedReport = 'shared_report'
 }
 
 interface WeatherData {
@@ -136,7 +139,7 @@ const Navbar = ({ onStart, onSectionChange, onOpenSettings }: { onStart: () => v
         aria-label="AETRAXA Home"
       >
         <SunIcon className="w-5 h-5 text-primary-accent" strokeWidth={2.5} aria-hidden="true" />
-        <span className="text-[13px] font-bold uppercase tracking-[0.4em] text-white">AETRAXA</span>
+        <span className="text-[13px] font-bold uppercase tracking-[0.4em] text-white aetraxa-logo">AETRAXA</span>
       </button>
 
       {/* Desktop Menu */}
@@ -575,28 +578,41 @@ export default function App() {
     }
   }, [language]);
 
-  const handleSaveProfile = useCallback((profile: UserProfile) => {
-    setUserProfile(profile);
-    localStorage.setItem('aetraxaUserProfile', JSON.stringify(profile));
-    if (profile.preferred_language !== language) {
-      setLanguage(profile.preferred_language);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareCityParam = params.get('shareCity');
+    if (shareCityParam) {
+      setLoading(true);
+      getWeatherData(shareCityParam)
+        .then(data => {
+          setWeather(data);
+          getAIInsights(data, true);
+          setCurrentPage(Page.SharedReport);
+        })
+        .catch(err => {
+          console.error("Failed to load shared city:", err);
+          setError("Failed to load the shared location report.");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
-  }, [language, setLanguage]);
+  }, []);
 
-  const getAIInsights = useCallback(async (data: WeatherData) => {
+  const getAIInsights = useCallback(async (data: WeatherData, force = false, profileOverride?: UserProfile) => {
     const now = Date.now();
-    if (now - lastAnalysisTime < 60000 && aiInsights) {
+    if (!force && now - lastAnalysisTime < 60000 && aiInsights) {
       console.log("Analysis cooldown active. Using cached insights.");
       return;
     }
     
     setAiLoading(true);
-    // setAiInsights(null); // Remove reset to avoid flickering during cooldown-blocked refreshes or quick searches
     try {
+      const activeProfile = profileOverride || userProfile;
       const response = await fetch('/api/ai-insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weatherData: data, userProfile, language })
+        body: JSON.stringify({ weatherData: data, userProfile: activeProfile, language })
       });
       
       if (response.ok) {
@@ -631,7 +647,18 @@ export default function App() {
     } finally {
       setAiLoading(false);
     }
-  }, [language, userProfile]);
+  }, [language, userProfile, lastAnalysisTime, aiInsights]);
+
+  const handleSaveProfile = useCallback((profile: UserProfile) => {
+    setUserProfile(profile);
+    localStorage.setItem('aetraxaUserProfile', JSON.stringify(profile));
+    if (profile.preferred_language !== language) {
+      setLanguage(profile.preferred_language);
+    }
+    if (weather) {
+      getAIInsights(weather, true, profile);
+    }
+  }, [language, setLanguage, weather, getAIInsights]);
 
   const handleSendChatMessage = useCallback(async (message: string) => {
     if (!message.trim() || !weather) return;
@@ -1040,6 +1067,65 @@ export default function App() {
             >
               <AboutPage onBack={handleHome} />
             </motion.div>
+          ) : currentPage === Page.SharedReport ? (
+            <motion.div
+              key="shared_report"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 1.02 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-4xl mx-auto px-4 py-8 md:py-16 flex flex-col items-center justify-center gap-6 min-h-[75vh]"
+            >
+              {/* Header Badge */}
+              <div className="flex items-center gap-3 mb-2 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full backdrop-blur-md">
+                <SunIcon className="w-4 h-4 text-primary-accent animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#fff2d4] aetraxa-logo">AETRAXA REPORT</span>
+                <span className="text-[9px] text-stone-500 font-bold uppercase tracking-widest">• shared artifact</span>
+              </div>
+
+              {/* Pixel-perfect Preview scaling down vectorially on mobile screens */}
+              {weather && (
+                <div id="shared-telemetry-artifact" className="flex flex-col items-center gap-8 w-full">
+                  <div className="w-full max-w-[360px] xs:max-w-md sm:max-w-[440px] md:max-w-[500px] flex justify-center items-center overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#050505] shadow-[0_30px_100px_rgba(234,88,12,0.15)] relative">
+                    <div className="scale-[0.55] xs:scale-[0.68] sm:scale-[0.8] md:scale-100 my-[-180px] xs:my-[-120px] sm:my-[-80px] md:my-0 origin-center flex-shrink-0">
+                      <ThermalReportCard weather={weather} />
+                    </div>
+                  </div>
+
+                  {/* Actions Column */}
+                  <div className="max-w-md w-full flex flex-col gap-3 px-4 text-center">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">Active Telemetry Received</h2>
+                    <p className="text-xs text-stone-400 font-bold leading-relaxed mb-4">
+                      You are viewing structural thermal levels for <span className="text-white font-black">{weather.city}</span> as captured by our sensors. Select an action below to decrypt live sensors or explore.
+                    </p>
+
+                    <button
+                      onClick={() => {
+                        // Clear queries manually
+                        window.history.pushState({}, '', window.location.pathname);
+                        setCurrentPage(Page.Main);
+                      }}
+                      className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl bg-primary-accent hover:bg-orange-600 font-black text-xs uppercase tracking-[0.3em] text-black shadow-[0_20px_50px_rgba(234,88,12,0.3)] transition-all"
+                    >
+                      <ActivityIcon className="w-4 h-4" />
+                      Check Live Data of {weather.city}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        window.history.pushState({}, '', window.location.pathname);
+                        setSelectedCity('');
+                        setSelectedCountry('');
+                        setCurrentPage(Page.Landing);
+                      }}
+                      className="w-full p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-stone-400 hover:text-white transition-all text-xs font-bold uppercase tracking-widest text-center"
+                    >
+                      Search Another Location
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
           ) : null}
         </AnimatePresence>
         </main>
@@ -1157,23 +1243,23 @@ const AssistantDrawer = ({ isOpen, onClose, messages, onSendMessage, isLoading, 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            style={{ width: `${width}px` }}
+            style={{ width: `${width}px`, maxWidth: '100vw' }}
             className={`fixed top-0 right-0 h-full bg-black border-l border-white/10 z-[1100] shadow-2xl flex flex-col ${isResizing ? 'select-none' : ''}`}
           >
             {/* Resize Handle */}
             <div 
               onMouseDown={startResizing}
-              className="absolute left-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-primary-accent/30 transition-colors z-[1101]"
+              className="absolute left-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-primary-accent/30 transition-colors z-[1101] hidden sm:block"
             />
 
             {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/50">
+            <div className="p-4 sm:p-6 border-b border-white/5 flex items-center justify-between bg-black/50">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
                   <SparklesIcon className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('tacticalAssistant')}</h3>
+                  <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-widest">{t('tacticalAssistant')}</h3>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
                     <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Active Link</span>
@@ -1192,10 +1278,10 @@ const AssistantDrawer = ({ isOpen, onClose, messages, onSendMessage, isLoading, 
             {/* Messages */}
             <div 
               ref={scrollRef}
-              className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar"
+              className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar"
             >
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-8">
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 px-6 sm:px-8">
                   <SparklesIcon className="w-12 h-12 text-white mb-4" />
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white">
                     Link Established. State your inquiry for tactical assessment.
@@ -1218,8 +1304,8 @@ const AssistantDrawer = ({ isOpen, onClose, messages, onSendMessage, isLoading, 
             </div>
 
             {/* Input Area */}
-            <div className="p-6 border-t border-white/5 bg-black/50">
-              <form onSubmit={handleSend} className="relative flex items-end gap-3">
+            <div className="p-4 sm:p-6 border-t border-white/5 bg-black/50">
+              <form onSubmit={handleSend} className="relative flex items-center gap-3">
                 <div className="relative flex-grow min-h-[52px] flex items-center">
                   {cooldownRemaining > 0 && (
                     <div className="absolute -top-6 right-0 flex items-center gap-2 px-3 py-1 bg-orange-600/10 border border-orange-600/20 rounded-full backdrop-blur-sm">
@@ -1239,7 +1325,7 @@ const AssistantDrawer = ({ isOpen, onClose, messages, onSendMessage, isLoading, 
                     placeholder={cooldownRemaining > 0 
                       ? "Standby for tactical sync..."
                       : t('chatPlaceholder')}
-                    className="w-full bg-black border border-white/10 rounded-2xl px-5 py-[15px] text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-orange-500/50 transition-all font-medium resize-none min-h-[52px] max-h-[180px] custom-scrollbar disabled:opacity-30 overflow-hidden leading-tight"
+                    className="w-full bg-black border border-white/10 rounded-2xl px-5 py-[15px] text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-orange-500/50 transition-all font-medium resize-none min-h-[52px] max-h-[180px] custom-scrollbar disabled:opacity-30 overflow-hidden leading-tight placeholder:whitespace-nowrap placeholder:overflow-hidden placeholder:text-ellipsis"
                     rows={1}
                   />
                   {cooldownRemaining > 0 && (
@@ -1257,7 +1343,7 @@ const AssistantDrawer = ({ isOpen, onClose, messages, onSendMessage, isLoading, 
                 <button 
                   disabled={!input.trim() || isLoading || cooldownRemaining > 0}
                   type="submit"
-                  className="h-[52px] px-6 rounded-xl bg-orange-600 text-black font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 disabled:bg-stone-800 disabled:text-stone-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-600/20 flex-shrink-0 flex items-center justify-center self-end"
+                  className="h-[52px] px-6 rounded-xl bg-orange-600 text-black font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 disabled:bg-stone-800 disabled:text-stone-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-600/20 flex-shrink-0 flex items-center justify-center"
                 >
                   {isLoading ? '...' : cooldownRemaining > 0 ? `${cooldownRemaining}s` : t('send')}
                 </button>
@@ -1986,12 +2072,12 @@ function LandingPage({
 const AppFooter = React.memo(() => {
   const { t } = useLanguage();
   return (
-    <footer className="relative z-30 w-full border-t border-[#fff2d4]/5 bg-[#0c0a0a]/40 backdrop-blur-xl py-12 mt-auto">
+    <footer className="relative z-30 w-full border-t border-[#fff2d4]/5 bg-black/85 backdrop-blur-md py-12 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex flex-col items-center md:items-start gap-4 w-full">
           <div className="flex items-center gap-2">
             <SunIcon className="w-5 h-5 text-orange-500" strokeWidth={3} aria-hidden="true" />
-            <span className="text-sm font-black uppercase tracking-[0.4em] text-[#fff2d4]">AETRAXA</span>
+            <span className="text-sm font-black uppercase tracking-[0.4em] text-[#fff2d4] aetraxa-logo">AETRAXA</span>
           </div>
           <p className="text-xs text-stone-400 tracking-widest leading-relaxed text-center md:text-left max-w-xs font-bold">
             {t('footerText')}
@@ -2403,6 +2489,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
   const { tempUnit } = useTempUnit();
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [instruction, setInstruction] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const modalId = React.useId();
   const dangerLevel = getDangerLevel(weather.current.heatIndex);
@@ -2417,6 +2504,8 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  const directShareUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?shareCity=${encodeURIComponent(weather.city)}`;
+
   const shareData = {
     title: `Precise Heat Insight: ${weather.city}`,
     text: `🌡️ AETRAXA THERMAL ALERT: ${weather.city}\n\n` +
@@ -2424,19 +2513,21 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
           `• Ambient Temp: ${formatTemp(weather.current.temp, tempUnit).toFixed(1)} ${tempUnitStr}\n` +
           `• Humidity: ${weather.current.humidity}%\n\n` +
           `Status: ${dangerLevel.label.toUpperCase()} DETECTED. Check live updates at Aetraxa.`,
-    url: window.location.href
+    url: directShareUrl
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`${shareData.text}\n\nView details: ${shareData.url}`);
+  const showFeedback = (text: string) => {
+    setInstruction(text);
+    setTimeout(() => {
+      setInstruction(null);
+    }, 6000);
+  };
+
+  const handleCopyDirect = () => {
+    navigator.clipboard.writeText(directShareUrl);
     setCopied(true);
+    showFeedback("✓ Direct Web Link copied to clipboard! Anyone opening this link can view the shared snapshot report.");
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const shareLinks = {
-    whatsapp: `https://wa.me/?text=${encodeURIComponent(`${shareData.text}\n\n${shareData.url}`)}`,
-    twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareData.text)}&url=${encodeURIComponent(shareData.url)}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareData.url)}`,
   };
 
   const handleDownload = async () => {
@@ -2456,48 +2547,55 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
+      showFeedback("✓ Thermal Report PNG downloaded to your device successfully!");
     } catch (err) {
       console.error('Failed to generate image', err);
+      showFeedback("Failed to build report PNG. Copy the direct link instead!");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleShare = async () => {
-    if (!cardRef.current) return;
-    setIsGenerating(true);
-    try {
-      const blob = await htmlToImage.toBlob(cardRef.current, {
-        backgroundColor: '#050505',
-        width: 600,
-        height: 800,
-        pixelRatio: 2
-      });
-      
-      if (!blob) throw new Error("Failed to generate image blob");
-      const file = new File([blob], `Aetraxa-Report-${weather.city}.png`, { type: 'image/png' });
+  // Safe Social triggers
+  const triggerWA = (mode: 'chat' | 'status') => {
+    const shareText = mode === 'chat' 
+      ? `${shareData.text}\n\nLive Link: ${directShareUrl}`
+      : `🔥 Thermal Alert: ${weather.city} has a Heat Index of ${Math.floor(formatTemp(weather.current.heatIndex, tempUnit))}${tempUnitStr}. Check live status: ${directShareUrl}`;
+    
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+    showFeedback(`Directing to WhatsApp. Paste and send pre-composed details as a ${mode === 'chat' ? 'direct message' : 'status update'}!`);
+  };
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: shareData.title,
-          text: shareData.text,
-        });
-      } else if (navigator.share) {
-        await navigator.share({
-          title: shareData.title,
-          text: `${shareData.text}\n\nLink: ${shareData.url}`,
-          url: shareData.url
-        });
-      } else {
-        handleCopy();
-      }
-    } catch (err) {
-      console.error('Share failed', err);
-      handleCopy();
-    } finally {
-      setIsGenerating(false);
+  const triggerIG = async (mode: 'chat' | 'story') => {
+    navigator.clipboard.writeText(`${shareData.text}\n\nVerify live: ${directShareUrl}`);
+    if (mode === 'story') {
+      await handleDownload();
+      showFeedback("✓ Report downloaded & Link copied! Create an Instagram Story, upload the PNG, and paste the Link Sticker.");
+    } else {
+      window.open('https://instagram.com/direct/inbox/', '_blank');
+      showFeedback("✓ Report summary copied to clipboard! Directing to Instagram Inbox so you can paste it into messages.");
     }
+  };
+
+  const triggerFB = async (mode: 'chat' | 'story') => {
+    if (mode === 'story') {
+      await handleDownload();
+      window.open('https://www.facebook.com/', '_blank');
+      showFeedback("✓ HTML Report downloaded! Go to Facebook Stories, select the image, and paste the direct link from your clipboard!");
+    } else {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(directShareUrl)}`, '_blank');
+      showFeedback("Directing to Facebook Messenger/Sharing. Share the direct link with friends or groups!");
+    }
+  };
+
+  const triggerX = (mode: 'post' | 'chat') => {
+    const shareText = `${shareData.text}\n\nUrl: ${directShareUrl}`;
+    const url = mode === 'post'
+      ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareData.text)}&url=${encodeURIComponent(directShareUrl)}`
+      : `https://twitter.com/messages/compose?text=${encodeURIComponent(shareText)}`;
+    
+    window.open(url, '_blank');
+    showFeedback(`Directing to X/Twitter ${mode === 'post' ? 'Post Composer' : 'DM Editor'}. Send with live telemetry!`);
   };
 
   return (
@@ -2505,7 +2603,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-6"
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby={modalId}
@@ -2515,7 +2613,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/90 backdrop-blur-xl" 
+        className="absolute inset-0 bg-black/85 backdrop-blur-xl" 
       />
       
       {/* Hidden Card for export */}
@@ -2524,136 +2622,203 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
       </div>
 
       <motion.div 
-        initial={{ scale: 0.9, y: 20, opacity: 0 }}
+        initial={{ scale: 0.95, y: 15, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        className="relative w-full max-w-lg bg-black border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+        exit={{ scale: 0.95, y: 15, opacity: 0 }}
+        className="relative w-full max-w-2xl bg-[#080808] border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_0_80px_rgba(234,88,12,0.15)] overflow-hidden max-h-[90vh] flex flex-col"
         style={{ borderColor: `${dangerLevel.color}33` }}
       >
         <div className="absolute top-0 right-0 w-48 h-48 blur-[100px] rounded-full -mr-24 -mt-24 opacity-20 transition-colors duration-700" 
              style={{ backgroundColor: dangerLevel.color }} aria-hidden="true" />
         
-        <div className="flex justify-between items-center mb-8 relative z-10">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-6 relative z-10 flex-shrink-0">
           <div className="flex items-center gap-4">
-             <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-primary-accent shadow-inner">
-               <ShareIcon className="w-6 h-6" aria-hidden="true" />
+             <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-primary-accent shadow-inner">
+               <ShareIcon className="w-5 h-5" aria-hidden="true" />
              </div>
              <div>
-               <h3 id={modalId} className="text-xl font-black text-white uppercase tracking-tighter">Broadcast Insights</h3>
-               <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.3em]">{weather.city} • Telemetry v4.2</p>
+               <h3 id={modalId} className="text-lg font-black text-white uppercase tracking-tight leading-tight">Share Report</h3>
+               <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.25em]">{weather.city} • Telemetry Output</p>
              </div>
           </div>
-          {copied && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              className="bg-primary-accent/10 border border-primary-accent/20 px-3 py-1 rounded-full ml-auto mr-4"
-            >
-              <span className="text-[9px] font-black uppercase tracking-widest text-primary-accent">Link Copied</span>
-            </motion.div>
-          )}
           <button 
             onClick={onClose}
             aria-label="Close share modal"
-            className="p-3 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5 focus:outline-none focus:ring-2 focus:ring-primary-accent"
+            className="p-2 sm:p-2.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5"
           >
-            <CloseIcon className="w-5 h-5" aria-hidden="true" />
+            <CloseIcon className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          <motion.button
-            whileHover={{ scale: 1.01, y: -2 }}
-            whileTap={{ scale: 0.99 }}
-            onClick={handleShare}
-            disabled={isGenerating}
-            className="md:col-span-4 flex flex-row items-center justify-center gap-5 p-7 rounded-[2.5rem] transition-all border border-primary-accent/50 bg-primary-accent text-black shadow-[0_20px_60px_-12px_rgba(234,88,12,0.6)] mb-4 overflow-hidden relative group"
-          >
-            {isGenerating ? (
-              <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <div className="relative">
-                <ShareIcon className="w-7 h-7 group-hover:scale-110 transition-transform" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-orange-600 animate-pulse" />
+        {/* Dynamic Instructional Notification Bar inside Modal */}
+        <AnimatePresence>
+          {instruction && (
+            <motion.div
+              initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+              animate={{ height: "auto", opacity: 1, marginBottom: 16 }}
+              exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+              className="bg-primary-accent/10 border border-primary-accent/20 rounded-2xl p-4 flex items-start gap-3 relative overflow-hidden flex-shrink-0"
+            >
+              <div className="w-2 h-2 rounded-full bg-primary-accent mt-1.5 animate-pulse" />
+              <div className="flex-1">
+                <p className="text-xs text-stone-200 font-bold leading-normal">{instruction}</p>
               </div>
-            )}
-            <div className="flex flex-col items-start translate-y-0.5">
-              <span className="text-sm font-black uppercase tracking-[0.4em]">
-                UNIFIED BROADCAST
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80">
-                {isGenerating ? "Synthesizing Report..." : "Image + Data • Primary Share"}
-              </span>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000" />
-          </motion.button>
+              <button onClick={() => setInstruction(null)} className="text-white/40 hover:text-white text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded hover:bg-white/5">
+                Dismiss
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <ShareOption 
-            icon={<TwitterIcon className="w-5 h-5" />} 
-            label="X Link" 
-            onClick={() => window.open(shareLinks.twitter, '_blank')}
-            color="bg-[#1DA1F2]/10 text-[#1DA1F2]"
-            borderColor="#1DA1F244"
-          />
-          <ShareOption 
-            icon={<div className="font-black text-lg leading-none">WA</div>} 
-            label="WA Link" 
-            onClick={() => window.open(shareLinks.whatsapp, '_blank')}
-            color="bg-[#25D366]/10 text-[#25D366]"
-            borderColor="#25D36644"
-          />
-          <ShareOption 
-            icon={<FacebookIcon className="w-5 h-5" />} 
-            label="FB Link" 
-            onClick={() => window.open(shareLinks.facebook, '_blank')}
-            color="bg-[#1877F2]/10 text-[#1877F2]"
-            borderColor="#1877F244"
-          />
-          <ShareOption 
-            icon={<DownloadIcon className="w-5 h-5" />} 
-            label="Save PNG" 
-            onClick={handleDownload}
-            color="bg-white/10 text-white"
-            borderColor="rgba(255,242,212,0.2)"
-          />
-        </div>
-
-        <div className="flex items-center gap-4 mb-8 px-4 opacity-50">
-          <div className="h-[1px] flex-grow bg-white/10" />
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 whitespace-nowrap">Encryption Active • AIS-RSA-2048</p>
-          <div className="h-[1px] flex-grow bg-white/10" />
-        </div>
-
-        <div className="p-8 bg-black border border-white/5 rounded-[3rem] relative overflow-hidden group/payload">
-          <div className="absolute top-0 left-0 w-2 h-full transition-colors duration-1000" 
-               style={{ backgroundColor: dangerLevel.color, boxShadow: `0 0 30px ${dangerLevel.color}44` }} />
+        {/* Modal Scrollable Body */}
+        <div className="flex-grow overflow-y-auto pr-1 space-y-6 scrollbar-thin">
           
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-               <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_15px_currentColor] animate-pulse" 
-                    style={{ backgroundColor: dangerLevel.color, color: dangerLevel.color }} />
-               <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Secure Payload Summary</span>
+          {/* Quick Actions (Primary Row) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={handleDownload}
+              disabled={isGenerating}
+              className="flex items-center justify-center gap-3 p-5 rounded-[2rem] bg-primary-accent hover:bg-orange-600 font-black text-xs uppercase tracking-[0.3em] text-black transition-all shadow-[0_15px_30px_rgba(234,88,12,0.15)] disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              ) : (
+                <DownloadIcon className="w-5 h-5" />
+              )}
+              {isGenerating ? "Generating PNG..." : "Download Report PNG"}
+            </button>
+
+            <button
+              onClick={handleCopyDirect}
+              className="flex items-center justify-center gap-3 p-5 rounded-[2rem] bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white font-black text-xs uppercase tracking-[0.3em] transition-all"
+            >
+              {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <LinkIcon className="w-5 h-5" />}
+              {copied ? "Link Copied!" : "Copy Direct Link"}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 py-2 opacity-50">
+            <div className="h-[1px] flex-grow bg-white/10" />
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 whitespace-nowrap">Social Sharing Options</p>
+            <div className="h-[1px] flex-grow bg-white/10" />
+          </div>
+
+          {/* Redesigned Minimal & Simple social channels layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* WhatsApp */}
+            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-[#25D366]/10 text-[#25D366]">
+                  <MessageCircleIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">WhatsApp</h4>
+                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Direct chat or status broadcast</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => triggerWA('chat')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Share to Chat
+                </button>
+                <button 
+                  onClick={() => triggerWA('status')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Post to Status
+                </button>
+              </div>
             </div>
-            <div className="flex gap-1">
-               {Array.from({ length: 3 }).map((_, i) => (
-                 <div key={i} className="w-1 h-3 bg-white/5 rounded-full" />
-               ))}
+
+            {/* Instagram */}
+            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-[#E1306C]/10 text-[#E1306C]">
+                  <InstagramIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Instagram</h4>
+                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Direct message or Story add-on</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => triggerIG('chat')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Send in Chat
+                </button>
+                <button 
+                  onClick={() => triggerIG('story')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Share to Story
+                </button>
+              </div>
+            </div>
+
+            {/* Facebook */}
+            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-[#1877F2]/10 text-[#1877F2]">
+                  <FacebookIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Facebook</h4>
+                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Messenger chat or Story sharing</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => triggerFB('chat')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Messenger Link
+                </button>
+                <button 
+                  onClick={() => triggerFB('story')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Share to Story
+                </button>
+              </div>
+            </div>
+
+            {/* X / Twitter */}
+            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-white/10 text-white">
+                  <TwitterIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider">X / Twitter</h4>
+                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Public post or private message</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => triggerX('post')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Create Post
+                </button>
+                <button 
+                  onClick={() => triggerX('chat')} 
+                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
+                >
+                  Send DM
+                </button>
+              </div>
             </div>
           </div>
-          
-          <p className="text-xs text-white/40 leading-relaxed font-bold tracking-tight italic line-clamp-2 group-hover/payload:text-white transition-colors duration-500">
-            "{shareData.text.split('\n')[0]}... [TELEMETRY_ENCRYPTED]... Link: {shareData.url.substring(0, 20)}..."
-          </p>
-          
-          <div className="mt-6 flex justify-end items-center gap-4">
-            <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Checksum: {Math.random().toString(16).substring(2, 8).toUpperCase()}</span>
-            <button 
-              onClick={handleCopy}
-              className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all px-5 py-2.5 rounded-xl border-2 ${copied ? 'bg-primary-accent border-primary-accent text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/[0.08] shadow-lg'}`}
-            >
-              {copied ? <CheckIcon className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
-              {copied ? 'Copied' : 'Copy Direct Link'}
-            </button>
+
+          {/* Minimalist Footing details */}
+          <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-[#fff2d4]/20 flex-shrink-0">
+            <span>AETRAXA SECURE TRANSMISSION</span>
+            <span>DATA BY OPEN-METEO</span>
           </div>
         </div>
       </motion.div>
@@ -2697,7 +2862,7 @@ const ThermalReportCard = React.forwardRef<HTMLDivElement, { weather: WeatherDat
           <div className="flex items-center gap-4">
             <SunIcon className="w-10 h-10 text-primary-accent" strokeWidth={3} />
             <div className="flex flex-col">
-              <span className="text-xl font-black uppercase tracking-[0.5em] text-white">AETRAXA</span>
+              <span className="text-xl font-black uppercase tracking-[0.5em] text-white aetraxa-logo-large">AETRAXA</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-accent/60">Thermal Monitoring System</span>
             </div>
           </div>
@@ -2785,7 +2950,7 @@ const ThermalReportCard = React.forwardRef<HTMLDivElement, { weather: WeatherDat
                 <SunIcon className="w-12 h-12 text-primary-accent" />
              </div>
           </div>
-          <p className="text-[9px] font-black tracking-[0.4em] text-white uppercase bg-black px-3 py-1.5 rounded-full border border-white/10">AETRAXA.APP</p>
+          <p className="text-[9px] font-black tracking-[0.4em] text-white uppercase bg-black px-3 py-1.5 rounded-full border border-white/10 aetraxa-logo">AETRAXA.APP</p>
         </div>
       </div>
 
@@ -2798,29 +2963,7 @@ const ThermalReportCard = React.forwardRef<HTMLDivElement, { weather: WeatherDat
   );
 });
 
-function ShareOption({ icon, label, onClick, color, borderColor }: { icon: React.ReactNode, label: string, onClick: () => void, color: string, borderColor?: string }) {
-  return (
-    <motion.button
-      whileHover={{ 
-        scale: 1.05, 
-        y: -4,
-        borderColor: borderColor || 'rgba(219, 99, 33, 0.4)',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)'
-      }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className="relative flex flex-col items-center justify-center gap-4 p-6 rounded-[2rem] transition-all border border-white/5 bg-white/[0.01] hover:shadow-[0_15px_40px_-10px_rgba(12,10,10,0.5)] group overflow-hidden"
-    >
-      <div className={`p-4 rounded-2xl ${color} shadow-lg transition-all group-hover:scale-110 duration-300 flex items-center justify-center`}>
-        {icon}
-      </div>
-      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-white transition-colors">{label}</span>
-      
-      {/* Subtle hover background effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-    </motion.button>
-  );
-}
+
 
 function TacticalSettingsModal({ profile, onClose, onSave }: { profile: UserProfile, onClose: () => void, onSave: (profile: UserProfile) => void }) {
   const { language, t } = useLanguage();
@@ -2929,7 +3072,7 @@ function TacticalSettingsModal({ profile, onClose, onSave }: { profile: UserProf
         initial={{ scale: 0.9, y: 20, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        className="relative w-full max-w-2xl bg-[#090909] border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
+        className="relative w-full max-w-2xl bg-[#090909] border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl overflow-y-auto overflow-x-hidden max-h-[90vh] custom-scrollbar"
         style={{ borderColor: 'rgba(219,99,33,0.2)' }}
       >
         <div className="absolute top-0 right-0 w-48 h-48 blur-[100px] rounded-full -mr-24 -mt-24 opacity-10 bg-primary-accent" aria-hidden="true" />
@@ -3095,11 +3238,11 @@ function TacticalSettingsModal({ profile, onClose, onSave }: { profile: UserProf
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-4 items-center justify-between border-t border-white/10 pt-6 mt-8">
+          <div className="flex flex-col-reverse sm:flex-row gap-4 items-stretch sm:items-center sm:justify-between border-t border-white/10 pt-6 mt-8">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 rounded-full border border-white/10 text-white/60 text-xs font-black uppercase tracking-wider hover:bg-white/5 hover:text-white transition-all focus:outline-none"
+              className="px-6 py-3 rounded-full border border-white/10 text-white/60 text-xs font-black uppercase tracking-wider hover:bg-white/5 hover:text-white transition-all focus:outline-none w-full sm:w-auto text-center"
             >
               {t('close' as any)}
             </button>
@@ -3108,7 +3251,7 @@ function TacticalSettingsModal({ profile, onClose, onSave }: { profile: UserProf
               whileHover={{ scale: 1.02, backgroundColor: '#ff7722', boxShadow: '0 0 30px rgba(219,99,33,0.4)' }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="px-10 py-3 bg-primary-accent text-black rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(219,99,33,0.25)] border border-white/20 focus:outline-none"
+              className="px-6 sm:px-10 py-3 bg-primary-accent text-black rounded-full text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(219,99,33,0.25)] border border-white/20 focus:outline-none w-full sm:w-auto text-center"
             >
               {t('saveSettings' as any)}
             </motion.button>

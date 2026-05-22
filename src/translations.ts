@@ -119,7 +119,7 @@ export const translations = {
     requestIntelBriefing: "Request Intel Briefing",
     cooldownMessage: "Protocol delay active. Next transmission ready in {{seconds}}s.",
     chatPlaceholder: "Enter inquiry for tactical analysis...",
-    send: "Transmit",
+    send: "Send",
     optimalWindow: "Optimal Window",
     hazardWindow: "Hazard Window",
     tacticalRecommendations: "Tactical Recommendations",

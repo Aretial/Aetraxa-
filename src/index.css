@@ -64,6 +64,17 @@
   body[dir="rtl"] * {
     letter-spacing: normal !important;
   }
+  
+  /* Exempt English logo in nav bar and branding */
+  .aetraxa-logo, body[dir="rtl"] .aetraxa-logo {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif !important;
+    letter-spacing: 0.4em !important;
+  }
+  
+  .aetraxa-logo-large, body[dir="rtl"] .aetraxa-logo-large {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif !important;
+    letter-spacing: 0.5em !important;
+  }
   body[dir="rtl"] .text-xs { @apply text-sm; }
   body[dir="rtl"] .text-sm { @apply text-base; }
   body[dir="rtl"] .text-base { @apply text-lg; }
