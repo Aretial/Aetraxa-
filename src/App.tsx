@@ -26,15 +26,11 @@ import {
   Zap as ZapIcon,
   Lightbulb as LightbulbIcon,
   CheckCircle2 as CheckIcon,
-  Twitter as TwitterIcon,
-  Facebook as FacebookIcon,
   Link as LinkIcon,
   X as CloseIcon,
   Download as DownloadIcon,
   Globe as GlobeIcon,
-  Activity as ActivityIcon,
-  Instagram as InstagramIcon,
-  MessageCircle as MessageCircleIcon
+  Activity as ActivityIcon
 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { AetraxaSunIcon as SunIcon } from './components/AetraxaSunIcon';
@@ -2587,103 +2583,52 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
     }
   };
 
-  // Safe Social triggers
-  const triggerWA = (mode: 'chat' | 'status') => {
-    const shareText = mode === 'chat' 
-      ? `${shareData.text}\n\nLive Link: ${directShareUrl}`
-      : `🔥 Thermal Alert: ${weather.city} has a Heat Index of ${Math.floor(formatTemp(weather.current.heatIndex, tempUnit))}${tempUnitStr}. Check live status: ${directShareUrl}`;
+  // Helper to pre-generate thermal card snippet and trigger OS share or graceful download fallback
+  const handleNativeShare = async () => {
+    const shareText = `${shareData.text}\n\nVerify live: ${directShareUrl}`;
     
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-    showFeedback(`Directing to WhatsApp. Paste and send pre-composed details as a ${mode === 'chat' ? 'direct message' : 'status update'}!`);
-  };
-
-  const triggerIG = async (mode: 'chat' | 'story') => {
-    const textToCopy = `${shareData.text}\n\nVerify live: ${directShareUrl}`;
-    
-    // Copy the text to the clipboard so it can easily be pasted anywhere
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-    } catch (err) {
-      console.error("Failed to copy text", err);
+    if (!navigator.share) {
+      showFeedback("Your device/browser doesn't support the native share menu. Copied link instead.");
+      handleCopyDirect();
+      return;
     }
 
-    // Try utilizing modern Web Share API (offering native Instagram DM / Story options on mobile)
-    if (navigator.share && cardRef.current) {
-      setIsGenerating(true);
-      try {
-        const blob = await htmlToImage.toBlob(cardRef.current, {
+    setIsGenerating(true);
+    let blob: Blob | null = null;
+    try {
+      if (cardRef.current) {
+        blob = await htmlToImage.toBlob(cardRef.current, {
           backgroundColor: '#050505',
           width: 600,
           height: 800,
           pixelRatio: 2
         });
-        if (blob) {
-          const file = new File([blob], `Aetraxa-Report-${weather.city}.png`, { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: `AETRAXA Thermal Report: ${weather.city}`,
-              text: textToCopy
-            });
-            showFeedback("✓ System share sheet open! Select Instagram to share directly in messages (DM) or your Story.");
-            setIsGenerating(false);
-            return;
-          }
+      }
+    } catch(err) {
+      console.error("Failed generation", err);
+    }
+    setIsGenerating(false);
+
+    try {
+      const shareOptions: ShareData = {
+        title: `Aetraxa Thermal Report: ${weather.city}`,
+        text: shareText
+      };
+      
+      if (blob && navigator.canShare) {
+        const file = new File([blob], `Aetraxa-Report-${weather.city.replace(/\s+/g,'-')}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          shareOptions.files = [file];
         }
-      } catch (err) {
-        console.warn("Web Share failed, falling back to manual redirection...", err);
-      } finally {
-        setIsGenerating(false);
+      }
+      
+      await navigator.share(shareOptions);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+         console.warn("Native share error", err);
+         showFeedback("Your browser prevented sharing the report image. Please download it instead.");
       }
     }
-
-    // Fallback behavior if Web Share is not supported or rejected (e.g., on Desktop)
-    if (mode === 'story') {
-      await handleDownload();
-      // Try launching Instagram's camera deep link
-      window.open('instagram://story-camera', '_blank');
-      showFeedback("✓ Report downloaded & Link copied! Select the image from your camera roll and paste the Link Sticker.");
-    } else {
-      // Use instagram://direct to open direct messages/inbox directly instead of sharesheet (which opens post composer)
-      window.open('instagram://direct', '_blank');
-      // If the deep link doesn't respond on desktop, open web interface
-      setTimeout(() => {
-        window.open('https://instagram.com/direct/inbox/', '_blank');
-      }, 500);
-      showFeedback("✓ Direct link and summary copied! Opening Instagram Direct Inbox to send as chat.");
-    }
-  };
-
-  const triggerFB = async (mode: 'chat' | 'story') => {
-    const textToCopy = `${shareData.text}\n\nVerify live: ${directShareUrl}`;
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-    } catch (err) {
-      console.error("Failed to copy text", err);
-    }
-
-    if (mode === 'story') {
-      await handleDownload();
-      window.open('https://www.facebook.com/', '_blank');
-      showFeedback("✓ HTML Report downloaded! Go to Facebook Stories, select the image, and paste the direct link from your clipboard!");
-    } else {
-      // Deep link to Facebook Messenger direct share sheets
-      window.open(`fb-messenger://share/?link=${encodeURIComponent(directShareUrl)}`, '_blank');
-      setTimeout(() => {
-        window.open('https://www.facebook.com/messages/', '_blank');
-      }, 500);
-      showFeedback("✓ Summary & Link copied! Directing to Facebook Messenger so you can share directly with friends.");
-    }
-  };
-
-  const triggerX = (mode: 'post' | 'chat') => {
-    const shareText = `${shareData.text}\n\nUrl: ${directShareUrl}`;
-    const url = mode === 'post'
-      ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareData.text)}&url=${encodeURIComponent(directShareUrl)}`
-      : `https://twitter.com/messages/compose?text=${encodeURIComponent(shareText)}`;
-    
-    window.open(url, '_blank');
-    showFeedback(`Directing to X/Twitter ${mode === 'post' ? 'Post Composer' : 'DM Editor'}. Send with live telemetry!`);
   };
 
   return (
@@ -2713,7 +2658,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
         initial={{ scale: 0.95, y: 15, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.95, y: 15, opacity: 0 }}
-        className="relative w-full max-w-2xl bg-[#080808] border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_0_80px_rgba(234,88,12,0.15)] overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-lg bg-[#080808] border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-[0_0_80px_rgba(234,88,12,0.15)] overflow-hidden max-h-[90vh] flex flex-col"
         style={{ borderColor: `${dangerLevel.color}33` }}
       >
         <div className="absolute top-0 right-0 w-48 h-48 blur-[100px] rounded-full -mr-24 -mt-24 opacity-20 transition-colors duration-700" 
@@ -2727,7 +2672,7 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
              </div>
              <div>
                <h3 id={modalId} className="text-lg font-black text-white uppercase tracking-tight leading-tight">Share Report</h3>
-               <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.25em]">{weather.city} • Telemetry Output</p>
+               <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.25em]">{weather.city} • Telemetry</p>
              </div>
           </div>
           <button 
@@ -2760,151 +2705,66 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
         </AnimatePresence>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-grow overflow-y-auto pr-1 space-y-6 scrollbar-thin">
+        <div className="flex-grow overflow-y-auto pr-1 space-y-4 scrollbar-thin">
           
-          {/* Quick Actions (Primary Row) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={handleDownload}
-              disabled={isGenerating}
-              className="flex items-center justify-center gap-3 p-5 rounded-[2rem] bg-primary-accent hover:bg-orange-600 font-black text-xs uppercase tracking-[0.3em] text-black transition-all shadow-[0_15px_30px_rgba(234,88,12,0.15)] disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-              ) : (
-                <DownloadIcon className="w-5 h-5" />
-              )}
-              {isGenerating ? "Generating PNG..." : "Download Report PNG"}
-            </button>
-
-            <button
-              onClick={handleCopyDirect}
-              className="flex items-center justify-center gap-3 p-5 rounded-[2rem] bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white font-black text-xs uppercase tracking-[0.3em] transition-all"
-            >
-              {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <LinkIcon className="w-5 h-5" />}
-              {copied ? "Link Copied!" : "Copy Direct Link"}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-4 py-2 opacity-50">
-            <div className="h-[1px] flex-grow bg-white/10" />
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/40 whitespace-nowrap">Social Sharing Options</p>
-            <div className="h-[1px] flex-grow bg-white/10" />
-          </div>
-
-          {/* Redesigned Minimal & Simple social channels layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* WhatsApp */}
-            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#25D366]/10 text-[#25D366]">
-                  <MessageCircleIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">WhatsApp</h4>
-                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Direct chat or status broadcast</p>
-                </div>
+          <button
+            onClick={handleDownload}
+            disabled={isGenerating}
+            className="w-full flex justify-between items-center bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 rounded-[1.5rem] p-5 transition-all text-left group disabled:opacity-50"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-orange-500/10 text-orange-500 group-hover:scale-110 transition-transform">
+                {isGenerating ? <div className="w-5 h-5 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" /> : <DownloadIcon className="w-5 h-5" />}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => triggerWA('chat')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Share to Chat
-                </button>
-                <button 
-                  onClick={() => triggerWA('status')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Post to Status
-                </button>
+              <div>
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">Download Image</h4>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest font-black">Save to camera roll</p>
               </div>
             </div>
+            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:text-white group-hover:bg-white/10 transition-all">
+              <span className="text-xs">→</span>
+            </div>
+          </button>
 
-            {/* Instagram */}
-            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#E1306C]/10 text-[#E1306C]">
-                  <InstagramIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Instagram</h4>
-                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Direct message or Story add-on</p>
-                </div>
+          <button
+            onClick={handleCopyDirect}
+            className="w-full flex justify-between items-center bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 rounded-[1.5rem] p-5 transition-all text-left group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform">
+                {copied ? <CheckIcon className="w-5 h-5" /> : <LinkIcon className="w-5 h-5" />}
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => triggerIG('chat')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Send in Chat
-                </button>
-                <button 
-                  onClick={() => triggerIG('story')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Share to Story
-                </button>
+              <div>
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">{copied ? "Link Copied!" : "Copy Link"}</h4>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest font-black">Share URL directly</p>
               </div>
             </div>
+            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:text-white group-hover:bg-white/10 transition-all">
+              <span className="text-xs">→</span>
+            </div>
+          </button>
 
-            {/* Facebook */}
-            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#1877F2]/10 text-[#1877F2]">
-                  <FacebookIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">Facebook</h4>
-                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Messenger chat or Story sharing</p>
-                </div>
+          <button
+            onClick={handleNativeShare}
+            className="w-full flex justify-between items-center bg-primary-accent/10 hover:bg-primary-accent/20 border border-primary-accent/30 rounded-[1.5rem] p-5 transition-all text-left group disabled:opacity-50"
+            disabled={isGenerating}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-primary-accent text-black group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(234,88,12,0.4)]">
+                 <ShareIcon className="w-5 h-5" />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => triggerFB('chat')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Messenger Link
-                </button>
-                <button 
-                  onClick={() => triggerFB('story')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Share to Story
-                </button>
+              <div>
+                <h4 className="text-sm font-black text-primary-accent uppercase tracking-wider">Share over Device</h4>
+                <p className="text-[10px] text-primary-accent/60 uppercase tracking-widest font-black hover:text-primary-accent/80 transition-colors">WhatsApp, Instagram, messages & more</p>
               </div>
             </div>
-
-            {/* X / Twitter */}
-            <div className="bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all rounded-[2rem] p-5 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-white/10 text-white">
-                  <TwitterIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">X / Twitter</h4>
-                  <p className="text-[9px] text-white/40 uppercase tracking-widest font-black">Public post or private message</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => triggerX('post')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Create Post
-                </button>
-                <button 
-                  onClick={() => triggerX('chat')} 
-                  className="py-3 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest transition-all text-center border border-white/5"
-                >
-                  Send DM
-                </button>
-              </div>
+             <div className="w-6 h-6 rounded-full bg-primary-accent/20 flex items-center justify-center text-primary-accent group-hover:bg-primary-accent group-hover:text-black transition-all">
+              <span className="text-xs">→</span>
             </div>
-          </div>
+          </button>
 
           {/* Minimalist Footing details */}
-          <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-[#fff2d4]/20 flex-shrink-0">
+          <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-primary-accent/30 flex-shrink-0 mt-4">
             <span>AETRAXA SECURE TRANSMISSION</span>
             <span>DATA BY OPEN-METEO</span>
           </div>
