@@ -570,6 +570,20 @@ export default function App() {
   const [isLocating, setIsLocating] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'forward' | 'backward' | null>(null);
 
+  const [sharedReportScale, setSharedReportScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const padding = window.innerWidth < 640 ? 32 : 48;
+      const maxW = 600;
+      const availableWidth = Math.min(window.innerWidth - padding, maxW);
+      setSharedReportScale(Math.min(availableWidth / 600, 1));
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
@@ -1074,7 +1088,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 1.02 }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-4xl mx-auto px-4 py-8 md:py-16 flex flex-col items-center justify-center gap-6 min-h-[75vh]"
+              className="max-w-4xl mx-auto px-4 pt-32 pb-8 sm:pt-36 md:pt-44 flex flex-col items-center justify-center gap-6 min-h-[75vh]"
             >
               {/* Header Badge */}
               <div className="flex items-center gap-3 mb-2 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full backdrop-blur-md">
@@ -1083,11 +1097,28 @@ export default function App() {
                 <span className="text-[9px] text-stone-500 font-bold uppercase tracking-widest">• shared artifact</span>
               </div>
 
-              {/* Pixel-perfect Preview scaling down vectorially on mobile screens */}
+              {/* Pixel-perfect Preview scaling down vectorially with zoom/scale calculation */}
               {weather && (
                 <div id="shared-telemetry-artifact" className="flex flex-col items-center gap-8 w-full">
-                  <div className="w-full max-w-[360px] xs:max-w-md sm:max-w-[440px] md:max-w-[500px] flex justify-center items-center overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#050505] shadow-[0_30px_100px_rgba(234,88,12,0.15)] relative">
-                    <div className="scale-[0.55] xs:scale-[0.68] sm:scale-[0.8] md:scale-100 my-[-180px] xs:my-[-120px] sm:my-[-80px] md:my-0 origin-center flex-shrink-0">
+                  <div 
+                    style={{ 
+                      width: `${600 * sharedReportScale}px`, 
+                      height: `${800 * sharedReportScale}px`,
+                    }}
+                    className="overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#050505] shadow-[0_30px_100px_rgba(234,88,12,0.15)] relative flex items-center justify-center transition-all duration-300"
+                  >
+                    <div 
+                      style={{ 
+                        width: '600px', 
+                        height: '800px',
+                        transform: `scale(${sharedReportScale})`,
+                        transformOrigin: 'top left',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0
+                      }}
+                      className="origin-top-left flex-shrink-0"
+                    >
                       <ThermalReportCard weather={weather} />
                     </div>
                   </div>
@@ -1749,7 +1780,6 @@ const ScrollFrameBackground = React.memo(({ transitionDirection, onTransitionCom
    const canvasRef = useRef<HTMLCanvasElement>(null);
    const imagesRef = useRef<HTMLImageElement[]>([]);
    const transImagesRef = useRef<HTMLImageElement[]>([]);
-   const FRAME_COUNT = 240;
    const TRANS_FRAME_COUNT = 108;
    const currentFrameRef = useRef(1);
    const transFrameRef = useRef(1);
@@ -1764,7 +1794,7 @@ const ScrollFrameBackground = React.memo(({ transitionDirection, onTransitionCom
      const transImages: HTMLImageElement[] = [];
      
      const loadSequences = async () => {
-       // Landing Sequence
+       // Landing Sequence - initial 30 frames for fast render
        const landingPromises = [];
        for (let i = 1; i <= 30; i++) {
          const img = new Image();
@@ -1777,8 +1807,8 @@ const ScrollFrameBackground = React.memo(({ transitionDirection, onTransitionCom
        drawFrame(1, imagesRef);
        setIsReady(true);
 
-       // Rest of Landing
-       for (let i = 31; i <= FRAME_COUNT; i++) {
+       // Lazy load the rest 31-240 frames in background for normal pages
+       for (let i = 31; i <= 240; i++) {
          const img = new Image();
          img.src = `/assets/frames/frame_ (${i}).webp`;
          images[i-1] = img;
@@ -1873,7 +1903,8 @@ const ScrollFrameBackground = React.memo(({ transitionDirection, onTransitionCom
        if (maxScroll <= 0) return;
        
        const progress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
-       const frameIndex = Math.min(Math.floor(progress * FRAME_COUNT), FRAME_COUNT - 1) + 1;
+       const limit = currentPage === Page.SharedReport ? 30 : 240;
+       const frameIndex = Math.min(Math.floor(progress * limit), limit - 1) + 1;
 
        if (frameIndex !== currentFrameRef.current) {
          currentFrameRef.current = frameIndex;
@@ -2567,13 +2598,58 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
   };
 
   const triggerIG = async (mode: 'chat' | 'story') => {
-    navigator.clipboard.writeText(`${shareData.text}\n\nVerify live: ${directShareUrl}`);
+    const textToCopy = `${shareData.text}\n\nVerify live: ${directShareUrl}`;
+    
+    // Copy the text to the clipboard so it can easily be pasted anywhere
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (err) {
+      console.error("Failed to copy text", err);
+    }
+
+    // Try utilizing modern Web Share API (offering native Instagram DM / Story options on mobile)
+    if (navigator.share && cardRef.current) {
+      setIsGenerating(true);
+      try {
+        const blob = await htmlToImage.toBlob(cardRef.current, {
+          backgroundColor: '#050505',
+          width: 600,
+          height: 800,
+          pixelRatio: 2
+        });
+        if (blob) {
+          const file = new File([blob], `Aetraxa-Report-${weather.city}.png`, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `AETRAXA Thermal Report: ${weather.city}`,
+              text: textToCopy
+            });
+            showFeedback("✓ System share sheet open! Select Instagram to share directly in messages (DM) or your Story.");
+            setIsGenerating(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Web Share failed, falling back to manual redirection...", err);
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+
+    // Fallback behavior if Web Share is not supported or rejected (e.g., on Desktop)
     if (mode === 'story') {
       await handleDownload();
-      showFeedback("✓ Report downloaded & Link copied! Create an Instagram Story, upload the PNG, and paste the Link Sticker.");
+      // Try launching Instagram's camera deep link
+      window.open('instagram://story-camera', '_blank');
+      showFeedback("✓ Report downloaded & Link copied! Select the image from your camera roll and paste the Link Sticker.");
     } else {
-      window.open('https://instagram.com/direct/inbox/', '_blank');
-      showFeedback("✓ Report summary copied to clipboard! Directing to Instagram Inbox so you can paste it into messages.");
+      window.open('instagram://sharesheet', '_blank');
+      // If the deep link doesn't respond on desktop, open web interface
+      setTimeout(() => {
+        window.open('https://instagram.com/direct/inbox/', '_blank');
+      }, 500);
+      showFeedback("✓ Summary copied! Directing to Instagram so you can paste it into direct messages.");
     }
   };
 
