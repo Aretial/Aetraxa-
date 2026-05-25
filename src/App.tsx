@@ -9,7 +9,6 @@ import {
   Droplets as DropletsIcon, 
   Thermometer as ThermometerIcon, 
   AlertTriangle as AlertTriangleIcon, 
-  Sun as SunIcon, 
   Wind as WindIcon, 
   Clock as ClockIcon, 
   Share2 as ShareIcon,
@@ -38,6 +37,7 @@ import {
   MessageCircle as MessageCircleIcon
 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
+import { AetraxaSunIcon as SunIcon } from './components/AetraxaSunIcon';
 
 import { ForecastChart } from './components/ForecastChart';
 import { HeatwaveSafetyTips } from './components/HeatwaveSafetyTips';
@@ -1124,9 +1124,9 @@ export default function App() {
                   </div>
 
                   {/* Actions Column */}
-                  <div className="max-w-md w-full flex flex-col gap-3 px-4 text-center">
+                  <div className="max-w-md w-full flex flex-col gap-4 p-6 sm:p-8 text-center bg-[#050505]/80 backdrop-blur-xl rounded-[2.5rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] relative z-10">
                     <h2 className="text-xl font-black text-white uppercase tracking-tight">Active Telemetry Received</h2>
-                    <p className="text-xs text-stone-400 font-bold leading-relaxed mb-4">
+                    <p className="text-xs text-stone-400 font-bold leading-relaxed mb-2">
                       You are viewing structural thermal levels for <span className="text-white font-black">{weather.city}</span> as captured by our sensors. Select an action below to decrypt live sensors or explore.
                     </p>
 
@@ -2644,23 +2644,35 @@ function ShareModal({ weather, onClose }: { weather: WeatherData, onClose: () =>
       window.open('instagram://story-camera', '_blank');
       showFeedback("✓ Report downloaded & Link copied! Select the image from your camera roll and paste the Link Sticker.");
     } else {
-      window.open('instagram://sharesheet', '_blank');
+      // Use instagram://direct to open direct messages/inbox directly instead of sharesheet (which opens post composer)
+      window.open('instagram://direct', '_blank');
       // If the deep link doesn't respond on desktop, open web interface
       setTimeout(() => {
         window.open('https://instagram.com/direct/inbox/', '_blank');
       }, 500);
-      showFeedback("✓ Summary copied! Directing to Instagram so you can paste it into direct messages.");
+      showFeedback("✓ Direct link and summary copied! Opening Instagram Direct Inbox to send as chat.");
     }
   };
 
   const triggerFB = async (mode: 'chat' | 'story') => {
+    const textToCopy = `${shareData.text}\n\nVerify live: ${directShareUrl}`;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (err) {
+      console.error("Failed to copy text", err);
+    }
+
     if (mode === 'story') {
       await handleDownload();
       window.open('https://www.facebook.com/', '_blank');
       showFeedback("✓ HTML Report downloaded! Go to Facebook Stories, select the image, and paste the direct link from your clipboard!");
     } else {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(directShareUrl)}`, '_blank');
-      showFeedback("Directing to Facebook Messenger/Sharing. Share the direct link with friends or groups!");
+      // Deep link to Facebook Messenger direct share sheets
+      window.open(`fb-messenger://share/?link=${encodeURIComponent(directShareUrl)}`, '_blank');
+      setTimeout(() => {
+        window.open('https://www.facebook.com/messages/', '_blank');
+      }, 500);
+      showFeedback("✓ Summary & Link copied! Directing to Facebook Messenger so you can share directly with friends.");
     }
   };
 
