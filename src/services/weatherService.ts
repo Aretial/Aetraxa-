@@ -29,6 +29,7 @@ export function calculateHeatIndex(tempC: number, humidity: number): number {
 export async function getWeatherData(query: string | { lat?: number, lon?: number, name?: string }) {
   try {
     let lat: number, lon: number, name: string;
+    let countryName = "";
 
     if (typeof query === 'object' && query.lat !== undefined && query.lon !== undefined) {
       lat = query.lat;
@@ -37,16 +38,36 @@ export async function getWeatherData(query: string | { lat?: number, lon?: numbe
       if (query.name) {
         name = query.name;
       } else {
-        // Reverse Geocoding attempt with search API might be tricky,
-        // let's just use "Detected Location" or try to find name via a reverse lookup if possible.
-        // Open-Meteo doesn't have a dedicated free reverse geocoding endpoint, 
-        // so we'll use a placeholder and rely on coordinates for weather.
         name = "Detected Location";
         try {
            const revUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-           const revRes = await fetch(revUrl, { headers: { 'Accept-Language': 'en' } });
+           const revRes = await fetch(revUrl, { 
+             headers: { 
+               'Accept-Language': 'en',
+               'User-Agent': 'AETRAXA-Meteorological-Surveillance/1.0 (mtaretial@gmail.com)'
+             } 
+           });
            const revData = await revRes.json();
-           name = revData.address.city || revData.address.town || revData.address.village || revData.address.suburb || "Current Location";
+           if (revData && revData.address) {
+             name = revData.address.city || 
+                    revData.address.town || 
+                    revData.address.village || 
+                    revData.address.hamlet ||
+                    revData.address.suburb || 
+                    revData.address.borough ||
+                    revData.address.subdistrict ||
+                    revData.address.quarter ||
+                    revData.address.neighbourhood ||
+                    revData.address.municipality ||
+                    revData.address.city_district || 
+                    revData.address.county || 
+                    revData.address.state_district ||
+                    revData.address.state ||
+                    "Current Location";
+             countryName = revData.address.country || "";
+           } else {
+             name = "Current Location";
+           }
         } catch(e) {
            console.error("Reverse geocoding failed", e);
         }
@@ -54,7 +75,7 @@ export async function getWeatherData(query: string | { lat?: number, lon?: numbe
     } else {
       // Fallback: Geocoding if only name string is provided or coordinates are missing
       const searchName = typeof query === 'object' ? query.name : query;
-      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchName)}&count=1&language=en&format=json`;
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchName || '')}&count=1&language=en&format=json`;
       const geoResponse = await fetch(geoUrl);
       const geoData = await geoResponse.json();
 
@@ -62,10 +83,11 @@ export async function getWeatherData(query: string | { lat?: number, lon?: numbe
         throw new Error("City not found. Please try searching with a more specific name.");
       }
       ({ latitude: lat, longitude: lon, name } = geoData.results[0]);
+      countryName = geoData.results[0].country || "";
     }
 
     // 2. Weather Forecast
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,uv_index&daily=temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset&forecast_hours=24&timezone=auto`;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,uv_index,weather_code,wind_speed_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,uv_index&daily=temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset&forecast_hours=24&timezone=auto&nocache=${Date.now()}`;
     
     const weatherResponse = await fetch(weatherUrl);
     if (!weatherResponse.ok) {
@@ -121,6 +143,7 @@ export async function getWeatherData(query: string | { lat?: number, lon?: numbe
     // 3. Process Data
     const weatherData = {
       city: name,
+      country: countryName || "",
       timezone: data.timezone,
       current: {
         temp: data.current.temperature_2m,
@@ -128,6 +151,7 @@ export async function getWeatherData(query: string | { lat?: number, lon?: numbe
         apparentTemp: data.current.apparent_temperature,
         uvIndex: data.current.uv_index,
         windSpeed: data.current.wind_speed_10m,
+        windGusts: data.current.wind_gusts_10m,
         weatherCode: data.current.weather_code,
         heatIndex: calculateHeatIndex(data.current.temperature_2m, data.current.relative_humidity_2m),
       },
@@ -148,6 +172,119 @@ export async function getWeatherData(query: string | { lat?: number, lon?: numbe
     };
 
     return weatherData;
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function getAqiData(query: string | { lat?: number, lon?: number, name?: string }) {
+  try {
+    let lat: number, lon: number, name: string;
+    let countryName = "";
+
+    if (typeof query === 'object' && query.lat !== undefined && query.lon !== undefined) {
+      lat = query.lat;
+      lon = query.lon;
+      
+      if (query.name) {
+        name = query.name;
+      } else {
+        name = "Detected Location";
+        try {
+           const revUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+           const revRes = await fetch(revUrl, { 
+             headers: { 
+               'Accept-Language': 'en',
+               'User-Agent': 'AETRAXA-Meteorological-Surveillance/1.0 (mtaretial@gmail.com)'
+             } 
+           });
+           const revData = await revRes.json();
+           if (revData && revData.address) {
+             name = revData.address.city || 
+                    revData.address.town || 
+                    revData.address.village || 
+                    revData.address.hamlet ||
+                    revData.address.suburb || 
+                    revData.address.borough ||
+                    revData.address.subdistrict ||
+                    revData.address.quarter ||
+                    revData.address.neighbourhood ||
+                    revData.address.municipality ||
+                    revData.address.city_district || 
+                    revData.address.county || 
+                    revData.address.state_district ||
+                    revData.address.state ||
+                    "Current Location";
+             countryName = revData.address.country || "";
+           } else {
+             name = "Current Location";
+           }
+        } catch(e) {
+           console.error("Reverse geocoding failed", e);
+        }
+      }
+    } else {
+      const searchName = typeof query === 'object' ? query.name : query;
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchName || '')}&count=1&language=en&format=json`;
+      const geoResponse = await fetch(geoUrl);
+      const geoData = await geoResponse.json();
+
+      if (!geoData.results || geoData.results.length === 0) {
+        throw new Error("City not found. Please try searching with a more specific name.");
+      }
+      ({ latitude: lat, longitude: lon, name } = geoData.results[0]);
+      countryName = geoData.results[0].country || "";
+    }
+
+    const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi,european_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,dust,uv_index&hourly=us_aqi,european_aqi,pm10,pm2_5&timezone=auto&forecast_days=1&nocache=${Date.now()}`;
+    
+    const aqiResponse = await fetch(aqiUrl);
+    if (!aqiResponse.ok) {
+      throw new Error("Unable to fetch AQI data. Please try again.");
+    }
+    const data = await aqiResponse.json();
+
+    const formatLocalTime = (isoString: string) => {
+      const parts = isoString.split('T')[1].split(':');
+      let h = parseInt(parts[0], 10);
+      const m = parts[1];
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12; 
+      return `${h}:${m} ${ampm}`;
+    };
+
+    const hourlyData = data.hourly.time.slice(0, 24).map((time: string, i: number) => ({
+      rawTime: time,
+      time: formatLocalTime(time),
+      aqi: data.hourly.us_aqi[i],
+      us_aqi: data.hourly.us_aqi[i],
+      european_aqi: data.hourly.european_aqi[i],
+      pm10: data.hourly.pm10[i],
+      pm2_5: data.hourly.pm2_5[i],
+    }));
+
+    return {
+      city: name,
+      country: countryName || "",
+      timezone: data.timezone,
+      current: {
+        aqi: data.current.us_aqi,
+        us_aqi: data.current.us_aqi,
+        european_aqi: data.current.european_aqi,
+        pm10: data.current.pm10,
+        pm2_5: data.current.pm2_5,
+        co: data.current.carbon_monoxide,
+        no2: data.current.nitrogen_dioxide,
+        so2: data.current.sulphur_dioxide,
+        ozone: data.current.ozone,
+        dust: data.current.dust,
+        uvIndex: data.current.uv_index
+      },
+      hourly: hourlyData,
+      lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp: new Date().toISOString(),
+    };
   } catch (error: any) {
     throw error;
   }
